@@ -1,7 +1,7 @@
 import { GameScreen, ScreenContext } from "./components/game-screen/game-screen.tsx"
 import "./App.css";
 import { colors } from "./entities/colors.ts";
-import { Board } from "./entities/Board.ts";
+import { Board } from "./entities/board.ts";
 import { Chip } from "./entities/chip.ts";
 
 function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenContext: ScreenContext) {

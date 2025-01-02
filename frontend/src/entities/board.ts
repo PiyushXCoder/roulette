@@ -38,6 +38,7 @@ function drawLabledRect(context: CanvasRenderingContext2D, lable: string, x: num
 class Board implements Drawable {
   draw(_deltaSeconds: number, context: CanvasRenderingContext2D, _screenContext: ScreenContext) {
     let shiftX = 10, shiftY = 30;
+    context.setLineDash([]);
 
     // "0" BOX 
     let localShiftX = shiftX;
