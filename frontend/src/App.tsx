@@ -4,7 +4,6 @@ import { colors } from "./entities/colors.ts";
 import { Board } from "./entities/Board.ts";
 
 function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenContext: ScreenContext) {
-  console.log(deltaSeconds);
   context.fillStyle = colors.BOARD;
   context.fillRect(0, 0, screenContext.screen.width, screenContext.screen.height);
 

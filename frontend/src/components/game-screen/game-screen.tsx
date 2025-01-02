@@ -22,7 +22,8 @@ interface ScreenContext {
     mouse: {
       x: number,
       y: number
-      down: boolean
+      down: boolean,
+      dragged: boolean
     }
   },
   screen: {
@@ -36,7 +37,8 @@ let screenContext: ScreenContext = {
     mouse: {
       x: 0,
       y: 0,
-      down: false
+      down: false,
+      dragged: false,
     }
   },
   screen: {
@@ -67,6 +69,7 @@ function GameScreen(args: Config) {
     window.onmousemove = e => {
       screenContext.events.mouse.x = e.x - canvas.getBoundingClientRect().x;
       screenContext.events.mouse.y = e.y - canvas.getBoundingClientRect().y;
+      if (screenContext.events.mouse.down) screenContext.events.mouse.dragged = true;
     }
 
     window.onmousedown = _ => {
@@ -75,6 +78,7 @@ function GameScreen(args: Config) {
 
     window.onmouseup = _ => {
       screenContext.events.mouse.down = false;
+      screenContext.events.mouse.dragged = false;
     }
 
     let oldTimeStamp = 0;
