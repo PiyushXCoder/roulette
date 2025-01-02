@@ -63,8 +63,8 @@ function GameScreen(args: Config) {
     const context = get2DContext(canvas);
     if (context == null) return;
 
-    screenContext.screen.width = canvas.width;
-    screenContext.screen.height = canvas.height;
+    screenContext.screen.width = Number(canvas.style.width.replace(/[^0-9]/g, ""));
+    screenContext.screen.height = Number(canvas.style.height.replace(/[^0-9]/g, ""));
 
     window.onmousemove = e => {
       screenContext.events.mouse.x = e.x - canvas.getBoundingClientRect().x;
