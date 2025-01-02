@@ -1,24 +1,5 @@
 import React, { useEffect, useRef } from "react";
 
-// const RED = "#b44744", BLACK = "#212322";
-// type BoxType = typeof RED | typeof BLACK;
-
-// const ColouredBoxMap: BoxType[] = [
-//   RED, BLACK, RED,
-//   BLACK, RED, BLACK,
-//   RED, BLACK, RED,
-//   BLACK, BLACK, RED,
-//   BLACK, RED, BLACK,
-//   RED, BLACK, RED,
-//   RED, BLACK, RED,
-//   BLACK, RED, BLACK,
-//   RED, BLACK, RED,
-//   BLACK, BLACK, RED,
-//   BLACK, RED, BLACK,
-//   RED, BLACK, RED,
-// ]
-
-
 function getCanvas(canvasRef: React.MutableRefObject<HTMLCanvasElement | null>) {
   const canvas: HTMLCanvasElement | null = canvasRef.current;
   if (canvas == null) return null;
@@ -108,7 +89,7 @@ function GameScreen(args: Config) {
 
   }, [canvasRef]);
 
-  return <canvas ref={canvasRef} style={{ imageRendering: "pixelated", width: args.width || 1000 + "px", height: args.height || 500 + "px" }} />
+  return <canvas ref={canvasRef} style={{ imageRendering: "pixelated", width: args.width || 1000 + "px", height: args.height || 550 + "px" }} />
 }
 
 export { GameScreen, type ScreenContext };

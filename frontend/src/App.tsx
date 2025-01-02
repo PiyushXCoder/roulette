@@ -1,23 +1,15 @@
 import { GameScreen, ScreenContext } from "./components/game-screen/game-screen.tsx"
 import "./App.css";
-
-let x = 0;
+import { colors } from "./entities/colors.ts";
+import { Board } from "./entities/Board.ts";
 
 function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenContext: ScreenContext) {
   console.log(deltaSeconds);
-  context.clearRect(0, 0, 1000 + 4, 500 + 4);
-  context.fillStyle = "#f00";
+  context.fillStyle = colors.BOARD;
+  context.fillRect(0, 0, screenContext.screen.width, screenContext.screen.height);
 
-  if (screenContext.events.mouse.down) {
-    context.fillRect(0, 0, 100, 100);
-  }
-
-  context.fillStyle = "#0f0";
-  context.fillRect(x, 300, 50, 50);
-  x += 50 * deltaSeconds;
-
-  context.fillStyle = "#00f";
-  context.fillRect(screenContext.events.mouse.x - 8, screenContext.events.mouse.y - 8, 16, 16);
+  let board = new Board();
+  board.draw(deltaSeconds, context, screenContext);
 }
 
 export { GameScreen };
