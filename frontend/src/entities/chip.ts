@@ -9,14 +9,29 @@ const CHIP_RADIUS = 25;
 const DASHED_ARC_RADIUS = 20;
 const FONT_HEIGHT = 15;
 
+type Color = string;
+type Value = number;
+type ColorAndValue = string;
+
 class Chip implements Drawable {
   color: string = ""
   value: number = 0
+  private static _instances: Map<ColorAndValue, Chip> = new Map();
 
-  constructor(color: string, value: number) {
+  private constructor(color: Color, value: Value) {
     this.color = color
     this.value = value
   }
+
+  static instance(color: Color, value: Value) {
+    const colorAndValue = color + value;
+    if (!Chip._instances.has(colorAndValue)) {
+      Chip._instances.set(colorAndValue, new Chip(color, value));
+    }
+
+    return Chip._instances.get(colorAndValue);
+  }
+
 
   draw(_deltaSeconds: number, context: CanvasRenderingContext2D, _screenContext: ScreenContext) {
     console.log(_screenContext.screen.height);
