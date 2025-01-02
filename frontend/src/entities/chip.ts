@@ -8,34 +8,38 @@ const DASH_INTERVAL = 5;
 const CHIP_RADIUS = 25;
 const DASHED_ARC_RADIUS = 20;
 const FONT_HEIGHT = 15;
+const ADD_BUTTON_SPACING = 70;
 
-type Color = string;
-type Value = number;
-type ColorAndValue = string;
+type ChipValue = number;
 
 class Chip implements Drawable {
-  color: string = ""
+  color: string = colors.YELLOW;
   value: number = 0
-  private static _instances: Map<ColorAndValue, Chip> = new Map();
+  addButtonPosition: number = 0
+  private static _instances: Map<ChipValue, Chip> = new Map();
 
-  private constructor(color: Color, value: Value) {
-    this.color = color
+  private constructor(value: ChipValue) {
     this.value = value
   }
 
-  static instance(color: Color, value: Value) {
-    const colorAndValue = color + value;
-    if (!Chip._instances.has(colorAndValue)) {
-      Chip._instances.set(colorAndValue, new Chip(color, value));
+  static instance(value: ChipValue) {
+    if (!Chip._instances.has(value)) {
+      Chip._instances.set(value, new Chip(value));
     }
 
-    return Chip._instances.get(colorAndValue);
+    return Chip._instances.get(value);
   }
 
+  setColor(color: string) {
+    this.color = color;
+  }
+
+  setAddButtonPosition(pos: number) {
+    this.addButtonPosition = pos;
+  }
 
   draw(_deltaSeconds: number, context: CanvasRenderingContext2D, _screenContext: ScreenContext) {
-    console.log(_screenContext.screen.height);
-    const localShiftX = 50, localShiftY = _screenContext.screen.height - 100;
+    const localShiftX = 100 + this.addButtonPosition * ADD_BUTTON_SPACING, localShiftY = _screenContext.screen.height - 100;
 
     context.beginPath();
     context.fillStyle = this.color;

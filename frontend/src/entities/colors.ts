@@ -6,6 +6,7 @@ export const colors = {
   TEAL: "#7BB7B7",
   YELLOW: "#EAC787",
   GREEN: "#5F9569",
+  BLUE: "#737bbf",
   WHITE: "#fdfdfd"
 };
 
