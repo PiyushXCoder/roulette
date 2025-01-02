@@ -14,21 +14,25 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
   const chipOne = Chip.instance(1);
   chipOne?.setColor(colors.GREEN);
   chipOne?.setAddButtonPosition(0);
+  chipOne?.checkSensors(screenContext);
   chipOne?.draw(deltaSeconds, context, screenContext);
 
   const chipTen = Chip.instance(10);
   chipTen?.setColor(colors.YELLOW);
   chipTen?.setAddButtonPosition(1);
+  chipTen?.checkSensors(screenContext);
   chipTen?.draw(deltaSeconds, context, screenContext);
 
   const chipHundered = Chip.instance(100);
   chipHundered?.setColor(colors.TEAL);
   chipHundered?.setAddButtonPosition(2);
+  chipHundered?.checkSensors(screenContext);
   chipHundered?.draw(deltaSeconds, context, screenContext);
 
   const chipFiveHundered = Chip.instance(500);
   chipFiveHundered?.setColor(colors.BLUE);
   chipFiveHundered?.setAddButtonPosition(3);
+  chipFiveHundered?.checkSensors(screenContext);
   chipFiveHundered?.draw(deltaSeconds, context, screenContext);
 
   Wallet.instance().draw(deltaSeconds, context, screenContext);

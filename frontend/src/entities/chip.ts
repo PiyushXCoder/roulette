@@ -1,8 +1,8 @@
-import { Drawable } from "./traits";
+import { Drawable, Sensible } from "./traits";
 import { ScreenContext } from "../components/game-screen/game-screen";
 import { colors } from "./colors";
 
-// const SHADOW_SHIFT = 3;
+const SHADOW_SHIFT = 3;
 const LINE_WIDTH = 10;
 const DASH_INTERVAL = 5;
 const CHIP_RADIUS = 25;
@@ -12,10 +12,12 @@ const ADD_BUTTON_SPACING = 70;
 
 type ChipValue = number;
 
-class Chip implements Drawable {
+class Chip implements Drawable, Sensible {
   color: string = colors.YELLOW;
   value: number = 0
   addButtonPosition: number = 0
+  isDragged: boolean = false
+
   private static _instances: Map<ChipValue, Chip> = new Map();
 
   private constructor(value: ChipValue) {
@@ -39,25 +41,61 @@ class Chip implements Drawable {
   }
 
   draw(_deltaSeconds: number, context: CanvasRenderingContext2D, _screenContext: ScreenContext) {
-    const localShiftX = 100 + this.addButtonPosition * ADD_BUTTON_SPACING, localShiftY = _screenContext.screen.height - 100;
+    let localShiftX = 100 + this.addButtonPosition * ADD_BUTTON_SPACING, localShiftY = _screenContext.screen.height - 100;
 
     context.beginPath();
     context.fillStyle = this.color;
-    context.arc(localShiftX, localShiftY, CHIP_RADIUS, 0, 2 * Math.PI);
+    context.arc(localShiftX + DASHED_ARC_RADIUS, localShiftY + DASHED_ARC_RADIUS, CHIP_RADIUS, 0, 2 * Math.PI);
     context.fill();
     context.beginPath();
     context.strokeStyle = colors.WHITE;
     context.setLineDash([DASH_INTERVAL, DASH_INTERVAL])
     context.lineWidth = LINE_WIDTH;
-    context.arc(localShiftX, localShiftY, DASHED_ARC_RADIUS, 0, 2 * Math.PI);
+    context.arc(localShiftX + DASHED_ARC_RADIUS, localShiftY + DASHED_ARC_RADIUS, DASHED_ARC_RADIUS, 0, 2 * Math.PI);
     context.stroke();
     context.fillStyle = colors.BLACK;
     context.font = "bold " + FONT_HEIGHT + "px Sans";
-    const labelWidth = context.measureText(String(this.value)).width;
-    context.fillText(String(this.value), localShiftX - labelWidth / 2, localShiftY + FONT_HEIGHT / 3)
+    let labelWidth = context.measureText(String(this.value)).width;
+    context.fillText(String(this.value), localShiftX + DASHED_ARC_RADIUS - labelWidth / 2, localShiftY + DASHED_ARC_RADIUS + FONT_HEIGHT / 3)
 
     // TODO: Render chip for dragging
+    if (this.isDragged) {
+      localShiftX = _screenContext.events.mouse.x - CHIP_RADIUS + LINE_WIDTH / 2, localShiftY = _screenContext.events.mouse.y - CHIP_RADIUS + LINE_WIDTH / 2;
+
+      context.beginPath();
+      context.fillStyle = colors.BLACK;
+      context.arc(localShiftX + DASHED_ARC_RADIUS + SHADOW_SHIFT, localShiftY + DASHED_ARC_RADIUS + SHADOW_SHIFT, CHIP_RADIUS, 0, 2 * Math.PI);
+      context.fill();
+      context.beginPath();
+      context.fillStyle = this.color;
+      context.arc(localShiftX + DASHED_ARC_RADIUS, localShiftY + DASHED_ARC_RADIUS, CHIP_RADIUS, 0, 2 * Math.PI);
+      context.fill();
+      context.beginPath();
+      context.strokeStyle = colors.WHITE;
+      context.setLineDash([DASH_INTERVAL, DASH_INTERVAL])
+      context.lineWidth = LINE_WIDTH;
+      context.arc(localShiftX + DASHED_ARC_RADIUS, localShiftY + DASHED_ARC_RADIUS, DASHED_ARC_RADIUS, 0, 2 * Math.PI);
+      context.stroke();
+      context.fillStyle = colors.BLACK;
+      context.font = "bold " + FONT_HEIGHT + "px Sans";
+      labelWidth = context.measureText(String(this.value)).width;
+      context.fillText(String(this.value), localShiftX + DASHED_ARC_RADIUS - labelWidth / 2, localShiftY + DASHED_ARC_RADIUS + FONT_HEIGHT / 3)
+    }
+
     // TODO: Render poistioned chips too
+  }
+
+  checkSensors(_screenContext: ScreenContext): void {
+    const localShiftX = 100 + this.addButtonPosition * ADD_BUTTON_SPACING, localShiftY = _screenContext.screen.height - 100;
+    const width = 2 * CHIP_RADIUS, height = 2 * CHIP_RADIUS;
+    if (_screenContext.events.mouse.down && !_screenContext.events.mouse.dragged) {
+      const mouseEvent = _screenContext.events.mouse;
+      if (mouseEvent.x >= localShiftX && mouseEvent.x <= localShiftX + width
+        && mouseEvent.y >= localShiftY && mouseEvent.y <= localShiftY + height)
+        this.isDragged = true;
+    } else if (!_screenContext.events.mouse.down) {
+      this.isDragged = false;
+    }
   }
 }
 

@@ -4,4 +4,8 @@ interface Drawable {
   draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenContext: ScreenContext): void
 }
 
-export { type Drawable }
+interface Sensible {
+  checkSensors(screenContext: ScreenContext): void
+}
+
+export { type Drawable, type Sensible }
