@@ -8,7 +8,7 @@ const LINE_WIDTH = 10;
 const DASH_INTERVAL = 5;
 const CHIP_RADIUS = 25;
 const DASHED_ARC_RADIUS = 20;
-const FONT_HEIGHT = 15;
+const FONT_HEIGHT = 11;
 const ADD_BUTTON_SPACING = 70;
 
 type ChipValue = number;
@@ -94,9 +94,9 @@ class Chip implements Drawable, Sensible {
     context.arc(x + DASHED_ARC_RADIUS, y + DASHED_ARC_RADIUS, DASHED_ARC_RADIUS, 0, 2 * Math.PI);
     context.stroke();
     context.fillStyle = colors.BLACK;
-    context.font = "bold " + FONT_HEIGHT + "px Sans";
+    context.font = "bold " + FONT_HEIGHT + "pt Sans";
     let labelWidth = context.measureText(String(this.value)).width;
-    context.fillText(String(this.value), x + DASHED_ARC_RADIUS - labelWidth / 2, y + DASHED_ARC_RADIUS + FONT_HEIGHT / 3)
+    context.fillText(String(this.value), x + DASHED_ARC_RADIUS - labelWidth / 2, y + DASHED_ARC_RADIUS + FONT_HEIGHT / 2)
   }
 
   checkSensors(_screenContext: ScreenContext): void {

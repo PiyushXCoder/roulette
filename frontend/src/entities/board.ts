@@ -20,7 +20,7 @@ const BOX_COLOR_MAP: BoxType[] = [
   RED, BLACK, RED,
 ];
 const BOX_SIZE = 70;
-const LABEL_HEIGHT = 30;
+const LABEL_HEIGHT = 20;
 const LINE_WIDTH = 5;
 const BOUNDARY_WIDTH = 10;
 
@@ -154,9 +154,9 @@ class Board implements Drawable, Sensible {
     context.lineWidth = LINE_WIDTH;
     context.strokeRect(x, y, width, height);
     context.fillStyle = colors.WHITE;
-    context.font = "bold " + LABEL_HEIGHT + "px Sans";
+    context.font = "bold " + LABEL_HEIGHT + "pt Sans";
     let lableWidth = context.measureText(label).width;
-    context.fillText(label, x + (width - lableWidth) / 2, y + LINE_WIDTH / 2 + LABEL_HEIGHT / 4 + height / 2);
+    context.fillText(label, x + (width - lableWidth) / 2, y + LABEL_HEIGHT / 2 + height / 2);
     if (!this.boundaries.has(label))
       this.boundaries.set(label, [x, y, width, height]);
   }
@@ -322,6 +322,6 @@ function isCollieded(x: number, y: number, width: number, height: number, screen
   return (x <= mouseX && x + width > mouseX && y <= mouseY && y + height > mouseY)
 }
 export {
-  Board, type CollisionResult, BOX_SIZE, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, LEFT, RIGHT, TOP, BOTTOM, CENTER
+  Board, type CollisionResult, BOX_COLOR_MAP
 };
 
