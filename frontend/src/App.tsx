@@ -9,7 +9,9 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
   context.fillStyle = colors.BOARD;
   context.fillRect(0, 0, screenContext.screen.width, screenContext.screen.height);
 
-  Board.instance().draw(deltaSeconds, context, screenContext);
+  const board = Board.instance();
+  board.checkSensors(screenContext);
+  board.draw(deltaSeconds, context, screenContext);
 
   const chipOne = Chip.instance(1);
   chipOne?.setColor(colors.GREEN);

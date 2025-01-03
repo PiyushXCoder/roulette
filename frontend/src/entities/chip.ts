@@ -18,7 +18,9 @@ class Chip implements Drawable, Sensible {
   addButtonPosition: number = 0
   isDragged: boolean = false
 
+
   private static _instances: Map<ChipValue, Chip> = new Map();
+  private static _draggedInstance: Chip | null = null;
 
   private constructor(value: ChipValue) {
     this.value = value
@@ -30,6 +32,10 @@ class Chip implements Drawable, Sensible {
     }
 
     return Chip._instances.get(value);
+  }
+
+  static getDraggedInstance() {
+    return this._draggedInstance;
   }
 
   setColor(color: string) {
@@ -86,15 +92,18 @@ class Chip implements Drawable, Sensible {
   }
 
   checkSensors(_screenContext: ScreenContext): void {
-    const localShiftX = 100 + this.addButtonPosition * ADD_BUTTON_SPACING, localShiftY = _screenContext.screen.height - 100;
+    const localShiftX = 100 + this.addButtonPosition * ADD_BUTTON_SPACING - DASHED_ARC_RADIUS / 2, localShiftY = _screenContext.screen.height - 100 - DASHED_ARC_RADIUS / 2;
     const width = 2 * CHIP_RADIUS, height = 2 * CHIP_RADIUS;
     if (_screenContext.events.mouse.down && !_screenContext.events.mouse.dragged) {
       const mouseEvent = _screenContext.events.mouse;
       if (mouseEvent.x >= localShiftX && mouseEvent.x <= localShiftX + width
-        && mouseEvent.y >= localShiftY && mouseEvent.y <= localShiftY + height)
+        && mouseEvent.y >= localShiftY && mouseEvent.y <= localShiftY + height) {
         this.isDragged = true;
+        Chip._draggedInstance = this;
+      }
     } else if (!_screenContext.events.mouse.down) {
       this.isDragged = false;
+      Chip._draggedInstance = null;
     }
   }
 }
