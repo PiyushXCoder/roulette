@@ -262,6 +262,7 @@ class Board implements Drawable, Sensible {
         } else if (collision.type == BOTTOM) {
           return [collision.label, sanitize(labelNumber - 1), sanitize(labelNumber - 2)]
         }
+        return [collision.label];
       }
     }
 
