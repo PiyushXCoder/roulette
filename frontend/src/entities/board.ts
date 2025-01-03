@@ -44,7 +44,7 @@ interface CollisionResult {
   typeof TOP |
   typeof BOTTOM |
   typeof CENTER,
-  localPosition: [number, number]
+  localPosition: { x: number, y: number }
 }
 
 class Board implements Drawable, Sensible {
@@ -118,9 +118,11 @@ class Board implements Drawable, Sensible {
   }
 
   checkSensors(screenContext: ScreenContext): void {
+    this.highlighted = [];
     const collision: CollisionResult | null = this.getCollision(screenContext);
     if (collision == null) return;
-    const affected = this.getAffedtedByCollision();
+    const affected = this.getAffedtedByCollision(collision);
+    this.highlighted = affected || [];
   }
 
 
@@ -148,10 +150,10 @@ class Board implements Drawable, Sensible {
 
     for (let [label, bound] of this.boundaries.entries()) {
       const [x, y, width, height] = bound;
-      const localPosition: [number, number] = [
-        screenContext.events.mouse.x - x,
-        screenContext.events.mouse.y - y
-      ];
+      const localPosition = {
+        x: screenContext.events.mouse.x - x,
+        y: screenContext.events.mouse.y - y
+      }
       if (label.match(/[^0-9]/g) == null) { // label is only number
         // Check corners
         if (isCollieded(x, y, BOUNDARY_WIDTH, BOUNDARY_WIDTH, screenContext))
@@ -181,8 +183,118 @@ class Board implements Drawable, Sensible {
     return null
   }
 
-  getAffedtedByCollision() {
+  getAffedtedByCollision(collision: CollisionResult) {
+    if (collision.label == "0") {
+      if (collision.type == RIGHT) {
+        return [collision.label, String(Math.floor(collision.localPosition.y / BOX_SIZE) + 1)]
+      }
+      return [collision.label]
+    }
 
+    if (collision.label.match(/[^0-9]/g) == null) { // label is only number'
+      const labelNumber = Number(collision.label);
+      const sanitize = (num: number) => {
+        if (num < 0) return "0";
+        if (num > 36) return "";
+        return (String(num))
+      }
+      if (labelNumber % 3 == 1) {
+        if (collision.type == TOP_LEFT) {
+          return [collision.label, sanitize(labelNumber - 3), sanitize(labelNumber - 2), sanitize(labelNumber - 1),
+          sanitize(labelNumber + 1), sanitize(labelNumber + 2)]
+        } else if (collision.type == TOP_RIGHT) {
+          return [collision.label, sanitize(labelNumber + 1), sanitize(labelNumber + 2),
+          sanitize(labelNumber + 3), sanitize(labelNumber + 4), sanitize(labelNumber + 5)]
+        } else if (collision.type == BOTTOM_LEFT) {
+          return [collision.label, sanitize(labelNumber - 3), sanitize(labelNumber - 2), sanitize(labelNumber + 1)]
+        } else if (collision.type == BOTTOM_RIGHT) {
+          return [collision.label, sanitize(labelNumber + 1), sanitize(labelNumber + 3), sanitize(labelNumber + 4)]
+        } else if (collision.type == LEFT) {
+          return [collision.label, sanitize(labelNumber - 3)]
+        } else if (collision.type == TOP) {
+          return [collision.label, sanitize(labelNumber + 1), sanitize(labelNumber + 2)]
+        } else if (collision.type == RIGHT) {
+          return [collision.label, sanitize(labelNumber + 3)]
+        } else if (collision.type == BOTTOM) {
+          return [collision.label, sanitize(labelNumber + 1)]
+        }
+        return [collision.label];
+      }
+      else if (labelNumber % 3 == 2) {
+        if (collision.type == TOP_LEFT) {
+          return [collision.label, sanitize(labelNumber - 4), sanitize(labelNumber - 3), sanitize(labelNumber - 1)]
+        } else if (collision.type == TOP_RIGHT) {
+          return [collision.label, sanitize(labelNumber - 1), sanitize(labelNumber + 2), sanitize(labelNumber + 3)]
+        } else if (collision.type == BOTTOM_LEFT) {
+          return [collision.label, sanitize(labelNumber - 3), sanitize(labelNumber - 2), sanitize(labelNumber + 1)]
+        } else if (collision.type == BOTTOM_RIGHT) {
+          return [collision.label, sanitize(labelNumber + 1), sanitize(labelNumber + 3), sanitize(labelNumber + 4)]
+        } else if (collision.type == LEFT) {
+          return [collision.label, sanitize(labelNumber - 3)]
+        } else if (collision.type == TOP) {
+          return [collision.label, sanitize(labelNumber - 1)]
+        } else if (collision.type == RIGHT) {
+          return [collision.label, sanitize(labelNumber + 3)]
+        } else if (collision.type == BOTTOM) {
+          return [collision.label, sanitize(labelNumber + 1)]
+        }
+        return [collision.label];
+      }
+      else if (labelNumber % 3 == 0) {
+        if (collision.type == TOP_LEFT) {
+          return [collision.label, sanitize(labelNumber - 4), sanitize(labelNumber - 3), sanitize(labelNumber - 1)]
+        } else if (collision.type == TOP_RIGHT) {
+          return [collision.label, sanitize(labelNumber - 1), sanitize(labelNumber + 2), sanitize(labelNumber + 3)]
+        } else if (collision.type == BOTTOM_LEFT) {
+          return [collision.label, sanitize(labelNumber - 5), sanitize(labelNumber - 4), sanitize(labelNumber - 3),
+          sanitize(labelNumber - 2), sanitize(labelNumber - 1)]
+        } else if (collision.type == BOTTOM_RIGHT) {
+          return [collision.label, sanitize(labelNumber - 2), sanitize(labelNumber - 1), sanitize(labelNumber + 1),
+          sanitize(labelNumber + 2), sanitize(labelNumber + 3)]
+        } else if (collision.type == LEFT) {
+          return [collision.label, sanitize(labelNumber - 3)]
+        } else if (collision.type == TOP) {
+          return [collision.label, sanitize(labelNumber - 1)]
+        } else if (collision.type == RIGHT) {
+          return [collision.label, sanitize(labelNumber + 3)]
+        } else if (collision.type == BOTTOM) {
+          return [collision.label, sanitize(labelNumber - 1), sanitize(labelNumber - 2)]
+        }
+      }
+    }
+
+    const range = (start: number, stop: number, step: number) =>
+      Array(Math.ceil((stop - start) / step)).fill(start).map((x, y) => String(x + y * step))
+    if (collision.label == "3rd")
+      return range(1, 37, 3);
+    if (collision.label == "2nd")
+      return range(2, 37, 3);
+    if (collision.label == "1st")
+      return range(3, 37, 3);
+
+    if (collision.label == "1-12")
+      return range(1, 12 + 1, 1);
+    if (collision.label == "13-24")
+      return range(13, 24 + 1, 1);
+    if (collision.label == "25-36")
+      return range(25, 36 + 1, 1);
+
+    if (collision.label == "1-18")
+      return range(1, 18 + 1, 1);
+    if (collision.label == "19-36")
+      return range(19, 36 + 1, 1);
+
+    if (collision.label == "even")
+      return range(2, 36 + 1, 2);
+    if (collision.label == "odd")
+      return range(1, 36 + 1, 2);
+
+    if (collision.label == "red")
+      return BOX_COLOR_MAP.map((color, index) => color == RED ? String(index + 1) : null).filter((label) => label != null);
+    if (collision.label == "black")
+      return BOX_COLOR_MAP.map((color, index) => color == BLACK ? String(index + 1) : null).filter((label) => label != null);
+
+    return []
   }
 }
 
