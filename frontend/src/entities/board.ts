@@ -77,11 +77,7 @@ class Board implements Drawable, Sensible {
     localShiftY = shiftY;
     let col = 0, row = 0;
     BOX_COLOR_MAP.forEach((boxColor, index) => {
-      context.fillStyle = boxColor;
-      context.beginPath()
-      context.arc(col * BOX_SIZE + BOX_SIZE / 2 + localShiftX, row * BOX_SIZE + BOX_SIZE / 2 + localShiftY, BOX_SIZE / 2 - LINE_WIDTH, 0, 2 * Math.PI);
-      context.fill();
-      this.drawBox(context, String(index + 1), col * BOX_SIZE + localShiftX, row * BOX_SIZE + localShiftY, BOX_SIZE, BOX_SIZE);
+      this.drawBox(context, String(index + 1), col * BOX_SIZE + localShiftX, row * BOX_SIZE + localShiftY, BOX_SIZE, BOX_SIZE, boxColor);
       if ((index + 1) % 3 == 0) {
         row = 0; col += 1;
       } else row += 1;
@@ -126,20 +122,26 @@ class Board implements Drawable, Sensible {
   }
 
 
-  drawBox(context: CanvasRenderingContext2D, label: string, x: number, y: number, width: number, height: number, lineWidth?: number, labelHeight?: number) {
-    lineWidth = lineWidth || LINE_WIDTH;
-    labelHeight = labelHeight || LABEL_HEIGHT;
+  drawBox(context: CanvasRenderingContext2D, label: string, x: number, y: number, width: number, height: number, arc?: BoxType) {
     if (this.highlighted.includes(label)) {
       context.fillStyle = colors.YELLOW;
       context.fillRect(x, y, width, height)
     }
+
+    if (arc) {
+      context.fillStyle = arc;
+      context.beginPath()
+      context.arc(x + BOX_SIZE / 2, y + BOX_SIZE / 2, BOX_SIZE / 2 - LINE_WIDTH, 0, 2 * Math.PI);
+      context.fill();
+    }
+
     context.strokeStyle = colors.BLACK;
     context.lineWidth = LINE_WIDTH;
     context.strokeRect(x, y, width, height);
     context.fillStyle = colors.WHITE;
     context.font = "bold " + LABEL_HEIGHT + "px Sans";
     let lableWidth = context.measureText(label).width;
-    context.fillText(label, x + (width - lableWidth) / 2, y + lineWidth / 2 + labelHeight / 4 + height / 2);
+    context.fillText(label, x + (width - lableWidth) / 2, y + LINE_WIDTH / 2 + LABEL_HEIGHT / 4 + height / 2);
     if (!this.boundaries.has(label))
       this.boundaries.set(label, [x, y, width, height]);
   }
