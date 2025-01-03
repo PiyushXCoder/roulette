@@ -7,6 +7,8 @@ const LINE_SPACING = 45;
 
 class Wallet implements Drawable {
   private static _instance: Wallet;
+  betAmount: number = 0
+  holdingAmount: number = 0
 
   private constructor() { }
 
@@ -20,9 +22,7 @@ class Wallet implements Drawable {
 
   draw(_deltaSeconds: number, context: CanvasRenderingContext2D, _screenContext: ScreenContext) {
     const localShiftX = _screenContext.screen.width - 300, localShiftY = _screenContext.screen.height - 100;
-    let bet = 100;
-    let holding = 1000;
-    let label = "Bet: ₹" + bet + "\nHolding: ₹" + holding;
+    let label = "Bet: ₹" + this.betAmount + "\nHolding: ₹" + this.holdingAmount;
     context.font = "bold " + FONT_HEIGHT + "px Sans";
     context.fillStyle = colors.WHITE;
     label.split("\n").forEach((line, index) => {

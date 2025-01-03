@@ -1,6 +1,7 @@
 import { Drawable, Sensible } from "./traits";
 import { ScreenContext } from "../components/game-screen/game-screen";
 import { colors } from "./colors";
+import { CollisionResult } from "./board";
 
 const SHADOW_SHIFT = 3;
 const LINE_WIDTH = 10;
@@ -12,12 +13,21 @@ const ADD_BUTTON_SPACING = 70;
 
 type ChipValue = number;
 
+
+interface Bet {
+  drawPosition: {
+    x: number,
+    y: number,
+  }
+  collision: CollisionResult
+}
+
 class Chip implements Drawable, Sensible {
   color: string = colors.YELLOW;
   value: number = 0
   addButtonPosition: number = 0
   isDragged: boolean = false
-
+  bets: Bet[] = []
 
   private static _instances: Map<ChipValue, Chip> = new Map();
   private static _draggedInstance: Chip | null = null;
@@ -48,47 +58,45 @@ class Chip implements Drawable, Sensible {
 
   draw(_deltaSeconds: number, context: CanvasRenderingContext2D, _screenContext: ScreenContext) {
     let localShiftX = 100 + this.addButtonPosition * ADD_BUTTON_SPACING, localShiftY = _screenContext.screen.height - 100;
+    this.drawChip(context, localShiftX, localShiftY);
+
+    // Render chip for dragging
+    if (this.isDragged) {
+      localShiftX = _screenContext.events.mouse.x - CHIP_RADIUS + LINE_WIDTH / 2, localShiftY = _screenContext.events.mouse.y - CHIP_RADIUS + LINE_WIDTH / 2;
+      this.drawChip(context, localShiftX, localShiftY, true);
+    }
+
+    // Draw bids
+    for (let bet of this.bets) {
+      localShiftX = bet.drawPosition.x - CHIP_RADIUS + LINE_WIDTH / 2, localShiftY = bet.drawPosition.y - CHIP_RADIUS + LINE_WIDTH / 2;
+      this.drawChip(context, localShiftX, localShiftY);
+    }
+  }
+
+  drawChip(context: CanvasRenderingContext2D, x: number, y: number, hasShadow?: boolean) {
+    hasShadow = hasShadow || false;
+
+    if (hasShadow) {
+      context.beginPath();
+      context.fillStyle = colors.BLACK;
+      context.arc(x + DASHED_ARC_RADIUS + SHADOW_SHIFT, y + DASHED_ARC_RADIUS + SHADOW_SHIFT, CHIP_RADIUS, 0, 2 * Math.PI);
+      context.fill();
+    }
 
     context.beginPath();
     context.fillStyle = this.color;
-    context.arc(localShiftX + DASHED_ARC_RADIUS, localShiftY + DASHED_ARC_RADIUS, CHIP_RADIUS, 0, 2 * Math.PI);
+    context.arc(x + DASHED_ARC_RADIUS, y + DASHED_ARC_RADIUS, CHIP_RADIUS, 0, 2 * Math.PI);
     context.fill();
     context.beginPath();
     context.strokeStyle = colors.WHITE;
     context.setLineDash([DASH_INTERVAL, DASH_INTERVAL])
     context.lineWidth = LINE_WIDTH;
-    context.arc(localShiftX + DASHED_ARC_RADIUS, localShiftY + DASHED_ARC_RADIUS, DASHED_ARC_RADIUS, 0, 2 * Math.PI);
+    context.arc(x + DASHED_ARC_RADIUS, y + DASHED_ARC_RADIUS, DASHED_ARC_RADIUS, 0, 2 * Math.PI);
     context.stroke();
     context.fillStyle = colors.BLACK;
     context.font = "bold " + FONT_HEIGHT + "px Sans";
     let labelWidth = context.measureText(String(this.value)).width;
-    context.fillText(String(this.value), localShiftX + DASHED_ARC_RADIUS - labelWidth / 2, localShiftY + DASHED_ARC_RADIUS + FONT_HEIGHT / 3)
-
-    // TODO: Render chip for dragging
-    if (this.isDragged) {
-      localShiftX = _screenContext.events.mouse.x - CHIP_RADIUS + LINE_WIDTH / 2, localShiftY = _screenContext.events.mouse.y - CHIP_RADIUS + LINE_WIDTH / 2;
-
-      context.beginPath();
-      context.fillStyle = colors.BLACK;
-      context.arc(localShiftX + DASHED_ARC_RADIUS + SHADOW_SHIFT, localShiftY + DASHED_ARC_RADIUS + SHADOW_SHIFT, CHIP_RADIUS, 0, 2 * Math.PI);
-      context.fill();
-      context.beginPath();
-      context.fillStyle = this.color;
-      context.arc(localShiftX + DASHED_ARC_RADIUS, localShiftY + DASHED_ARC_RADIUS, CHIP_RADIUS, 0, 2 * Math.PI);
-      context.fill();
-      context.beginPath();
-      context.strokeStyle = colors.WHITE;
-      context.setLineDash([DASH_INTERVAL, DASH_INTERVAL])
-      context.lineWidth = LINE_WIDTH;
-      context.arc(localShiftX + DASHED_ARC_RADIUS, localShiftY + DASHED_ARC_RADIUS, DASHED_ARC_RADIUS, 0, 2 * Math.PI);
-      context.stroke();
-      context.fillStyle = colors.BLACK;
-      context.font = "bold " + FONT_HEIGHT + "px Sans";
-      labelWidth = context.measureText(String(this.value)).width;
-      context.fillText(String(this.value), localShiftX + DASHED_ARC_RADIUS - labelWidth / 2, localShiftY + DASHED_ARC_RADIUS + FONT_HEIGHT / 3)
-    }
-
-    // TODO: Render poistioned chips too
+    context.fillText(String(this.value), x + DASHED_ARC_RADIUS - labelWidth / 2, y + DASHED_ARC_RADIUS + FONT_HEIGHT / 3)
   }
 
   checkSensors(_screenContext: ScreenContext): void {
@@ -106,6 +114,13 @@ class Chip implements Drawable, Sensible {
       Chip._draggedInstance = null;
     }
   }
+
+  addBid(collision: CollisionResult, drawPosition: [number, number]) {
+    const [x, y] = drawPosition;
+    this.bets.push({
+      collision: collision, drawPosition: { x, y }
+    })
+  }
 }
 
-export { Chip };
+export { Chip, type Bet as Bid };

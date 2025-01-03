@@ -117,6 +117,21 @@ class Board implements Drawable, Sensible {
     this.highlighted = [];
     const collision: CollisionResult | null = this.getCollision(screenContext);
     if (collision == null) return;
+
+    if (!screenContext.events.mouse.dragged && Chip.getDraggedInstance() != null) {
+      let [x, y, width, height] = this.boundaries.get(collision.label) || [0, 0, 0, 0];
+      if (collision.type == TOP_LEFT) x = x, y = y;
+      else if (collision.type == TOP_RIGHT) x = x + width, y = y;
+      else if (collision.type == BOTTOM_LEFT) x = x, y = y + height;
+      else if (collision.type == BOTTOM_RIGHT) x = x + width, y = y + height;
+      else if (collision.type == LEFT) x = x, y = y + height / 2;
+      else if (collision.type == TOP) x = x + width / 2, y = y;
+      else if (collision.type == RIGHT) x = x + width, y = y + height / 2;
+      else if (collision.type == BOTTOM) x = x + width / 2, y = y + height;
+      else if (collision.type == CENTER) x = x + width / 2, y = y + height / 2;
+      Chip.getDraggedInstance()?.addBid(collision, [x, y]);
+    }
+
     const affected = this.getAffedtedByCollision(collision);
     this.highlighted = affected || [];
   }
@@ -306,5 +321,7 @@ function isCollieded(x: number, y: number, width: number, height: number, screen
   const mouseY = screenContext.events.mouse.y;
   return (x <= mouseX && x + width > mouseX && y <= mouseY && y + height > mouseY)
 }
+export {
+  Board, type CollisionResult, BOX_SIZE, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, LEFT, RIGHT, TOP, BOTTOM, CENTER
+};
 
-export { Board };
