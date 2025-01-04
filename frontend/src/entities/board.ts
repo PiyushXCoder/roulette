@@ -35,7 +35,7 @@ const BOTTOM = "bottom";
 const CENTER = "center";
 interface CollisionResult {
   label: string
-  type: typeof TOP_LEFT |
+  placement: typeof TOP_LEFT |
   typeof TOP_RIGHT |
   typeof BOTTOM_LEFT |
   typeof BOTTOM_RIGHT |
@@ -120,15 +120,15 @@ class Board implements Drawable, Sensible {
 
     if (!screenContext.events.mouse.dragged && Chip.getDraggedInstance() != null) {
       let [x, y, width, height] = this.boundaries.get(collision.label) || [0, 0, 0, 0];
-      if (collision.type == TOP_LEFT) x = x, y = y;
-      else if (collision.type == TOP_RIGHT) x = x + width, y = y;
-      else if (collision.type == BOTTOM_LEFT) x = x, y = y + height;
-      else if (collision.type == BOTTOM_RIGHT) x = x + width, y = y + height;
-      else if (collision.type == LEFT) x = x, y = y + height / 2;
-      else if (collision.type == TOP) x = x + width / 2, y = y;
-      else if (collision.type == RIGHT) x = x + width, y = y + height / 2;
-      else if (collision.type == BOTTOM) x = x + width / 2, y = y + height;
-      else if (collision.type == CENTER) x = x + width / 2, y = y + height / 2;
+      if (collision.placement == TOP_LEFT) x = x, y = y;
+      else if (collision.placement == TOP_RIGHT) x = x + width, y = y;
+      else if (collision.placement == BOTTOM_LEFT) x = x, y = y + height;
+      else if (collision.placement == BOTTOM_RIGHT) x = x + width, y = y + height;
+      else if (collision.placement == LEFT) x = x, y = y + height / 2;
+      else if (collision.placement == TOP) x = x + width / 2, y = y;
+      else if (collision.placement == RIGHT) x = x + width, y = y + height / 2;
+      else if (collision.placement == BOTTOM) x = x + width / 2, y = y + height;
+      else if (collision.placement == CENTER) x = x + width / 2, y = y + height / 2;
       Chip.getDraggedInstance()?.addBid(collision, [x, y]);
     }
 
@@ -174,35 +174,35 @@ class Board implements Drawable, Sensible {
       if (label.match(/[^0-9]/g) == null) { // label is only number
         // Check corners
         if (isCollieded(x, y, BOUNDARY_WIDTH, BOUNDARY_WIDTH, screenContext))
-          return { label, type: TOP_LEFT, localPosition };
+          return { label, placement: TOP_LEFT, localPosition };
         if (isCollieded(x + width - BOUNDARY_WIDTH, y, BOUNDARY_WIDTH, BOUNDARY_WIDTH, screenContext))
-          return { label, type: TOP_RIGHT, localPosition };
+          return { label, placement: TOP_RIGHT, localPosition };
         if (isCollieded(x, y + height - BOUNDARY_WIDTH, BOUNDARY_WIDTH, BOUNDARY_WIDTH, screenContext))
-          return { label, type: BOTTOM_LEFT, localPosition };
+          return { label, placement: BOTTOM_LEFT, localPosition };
         if (isCollieded(x + width - BOUNDARY_WIDTH, y + height - BOUNDARY_WIDTH, BOUNDARY_WIDTH, BOUNDARY_WIDTH, screenContext))
-          return { label, type: BOTTOM_RIGHT, localPosition };
+          return { label, placement: BOTTOM_RIGHT, localPosition };
 
         // Check edges
         if (isCollieded(x, y, BOUNDARY_WIDTH, height, screenContext))
-          return { label, type: LEFT, localPosition };
+          return { label, placement: LEFT, localPosition };
         if (isCollieded(x, y, width, BOUNDARY_WIDTH, screenContext))
-          return { label, type: TOP, localPosition };
+          return { label, placement: TOP, localPosition };
         if (isCollieded(x + width - BOUNDARY_WIDTH, y, BOUNDARY_WIDTH, height, screenContext))
-          return { label, type: RIGHT, localPosition };
+          return { label, placement: RIGHT, localPosition };
         if (isCollieded(x, y + height - BOUNDARY_WIDTH, width, BOUNDARY_WIDTH, screenContext))
-          return { label, type: BOTTOM, localPosition };
+          return { label, placement: BOTTOM, localPosition };
       }
 
       // Check whole
       if (isCollieded(x, y, width, height, screenContext))
-        return { label, type: CENTER, localPosition };
+        return { label, placement: CENTER, localPosition };
     }
     return null
   }
 
   getAffedtedByCollision(collision: CollisionResult) {
     if (collision.label == "0") {
-      if (collision.type == RIGHT) {
+      if (collision.placement == RIGHT) {
         return [collision.label, String(Math.floor(collision.localPosition.y / BOX_SIZE) + 1)]
       }
       return [collision.label]
@@ -216,65 +216,65 @@ class Board implements Drawable, Sensible {
         return (String(num))
       }
       if (labelNumber % 3 == 1) {
-        if (collision.type == TOP_LEFT) {
+        if (collision.placement == TOP_LEFT) {
           return [collision.label, sanitize(labelNumber - 3), sanitize(labelNumber - 2), sanitize(labelNumber - 1),
           sanitize(labelNumber + 1), sanitize(labelNumber + 2)]
-        } else if (collision.type == TOP_RIGHT) {
+        } else if (collision.placement == TOP_RIGHT) {
           return [collision.label, sanitize(labelNumber + 1), sanitize(labelNumber + 2),
           sanitize(labelNumber + 3), sanitize(labelNumber + 4), sanitize(labelNumber + 5)]
-        } else if (collision.type == BOTTOM_LEFT) {
+        } else if (collision.placement == BOTTOM_LEFT) {
           return [collision.label, sanitize(labelNumber - 3), sanitize(labelNumber - 2), sanitize(labelNumber + 1)]
-        } else if (collision.type == BOTTOM_RIGHT) {
+        } else if (collision.placement == BOTTOM_RIGHT) {
           return [collision.label, sanitize(labelNumber + 1), sanitize(labelNumber + 3), sanitize(labelNumber + 4)]
-        } else if (collision.type == LEFT) {
+        } else if (collision.placement == LEFT) {
           return [collision.label, sanitize(labelNumber - 3)]
-        } else if (collision.type == TOP) {
+        } else if (collision.placement == TOP) {
           return [collision.label, sanitize(labelNumber + 1), sanitize(labelNumber + 2)]
-        } else if (collision.type == RIGHT) {
+        } else if (collision.placement == RIGHT) {
           return [collision.label, sanitize(labelNumber + 3)]
-        } else if (collision.type == BOTTOM) {
+        } else if (collision.placement == BOTTOM) {
           return [collision.label, sanitize(labelNumber + 1)]
         }
         return [collision.label];
       }
       else if (labelNumber % 3 == 2) {
-        if (collision.type == TOP_LEFT) {
+        if (collision.placement == TOP_LEFT) {
           return [collision.label, sanitize(labelNumber - 4), sanitize(labelNumber - 3), sanitize(labelNumber - 1)]
-        } else if (collision.type == TOP_RIGHT) {
+        } else if (collision.placement == TOP_RIGHT) {
           return [collision.label, sanitize(labelNumber - 1), sanitize(labelNumber + 2), sanitize(labelNumber + 3)]
-        } else if (collision.type == BOTTOM_LEFT) {
+        } else if (collision.placement == BOTTOM_LEFT) {
           return [collision.label, sanitize(labelNumber - 3), sanitize(labelNumber - 2), sanitize(labelNumber + 1)]
-        } else if (collision.type == BOTTOM_RIGHT) {
+        } else if (collision.placement == BOTTOM_RIGHT) {
           return [collision.label, sanitize(labelNumber + 1), sanitize(labelNumber + 3), sanitize(labelNumber + 4)]
-        } else if (collision.type == LEFT) {
+        } else if (collision.placement == LEFT) {
           return [collision.label, sanitize(labelNumber - 3)]
-        } else if (collision.type == TOP) {
+        } else if (collision.placement == TOP) {
           return [collision.label, sanitize(labelNumber - 1)]
-        } else if (collision.type == RIGHT) {
+        } else if (collision.placement == RIGHT) {
           return [collision.label, sanitize(labelNumber + 3)]
-        } else if (collision.type == BOTTOM) {
+        } else if (collision.placement == BOTTOM) {
           return [collision.label, sanitize(labelNumber + 1)]
         }
         return [collision.label];
       }
       else if (labelNumber % 3 == 0) {
-        if (collision.type == TOP_LEFT) {
+        if (collision.placement == TOP_LEFT) {
           return [collision.label, sanitize(labelNumber - 4), sanitize(labelNumber - 3), sanitize(labelNumber - 1)]
-        } else if (collision.type == TOP_RIGHT) {
+        } else if (collision.placement == TOP_RIGHT) {
           return [collision.label, sanitize(labelNumber - 1), sanitize(labelNumber + 2), sanitize(labelNumber + 3)]
-        } else if (collision.type == BOTTOM_LEFT) {
+        } else if (collision.placement == BOTTOM_LEFT) {
           return [collision.label, sanitize(labelNumber - 5), sanitize(labelNumber - 4), sanitize(labelNumber - 3),
           sanitize(labelNumber - 2), sanitize(labelNumber - 1)]
-        } else if (collision.type == BOTTOM_RIGHT) {
+        } else if (collision.placement == BOTTOM_RIGHT) {
           return [collision.label, sanitize(labelNumber - 2), sanitize(labelNumber - 1), sanitize(labelNumber + 1),
           sanitize(labelNumber + 2), sanitize(labelNumber + 3)]
-        } else if (collision.type == LEFT) {
+        } else if (collision.placement == LEFT) {
           return [collision.label, sanitize(labelNumber - 3)]
-        } else if (collision.type == TOP) {
+        } else if (collision.placement == TOP) {
           return [collision.label, sanitize(labelNumber - 1)]
-        } else if (collision.type == RIGHT) {
+        } else if (collision.placement == RIGHT) {
           return [collision.label, sanitize(labelNumber + 3)]
-        } else if (collision.type == BOTTOM) {
+        } else if (collision.placement == BOTTOM) {
           return [collision.label, sanitize(labelNumber - 1), sanitize(labelNumber - 2)]
         }
         return [collision.label];
