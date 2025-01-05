@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::structs::{self, PlayerId, TableId};
 
+use self::structs::{Placement, Timestamp};
+
 #[derive(Debug, Deserialize)]
 pub(crate) enum RequestMessages {
     JoinTable {
@@ -12,7 +14,8 @@ pub(crate) enum RequestMessages {
     },
     AddBet {
         label: String,
-        placement: String,
+        placement: Placement,
+        local_position: (i32, i32),
         amount: u32,
     },
     ClearBets,
@@ -34,6 +37,15 @@ pub(crate) enum ResponseMessages {
         total_bet: u32,
     },
     ClearBets,
+    Spin {
+        lucky_number: u32,
+        winning_amount: u32,
+        balance: u32,
+        bets_cleared: bool,
+    },
+    BeginSpinTimmer {
+        start: Timestamp,
+    },
     Error {
         msg: Arc<str>,
     },
@@ -49,12 +61,12 @@ pub(crate) struct Status {
 #[derive(Debug, Serialize, Clone)]
 pub(crate) struct Bet {
     pub(crate) label: String,
-    pub(crate) placement: String,
+    pub(crate) placement: Placement,
     pub(crate) amount: u32,
 }
 
 impl Bet {
-    pub(crate) fn new(label: String, placement: String, amount: u32) -> Self {
+    pub(crate) fn new(label: String, placement: Placement, amount: u32) -> Self {
         Self {
             label,
             placement,

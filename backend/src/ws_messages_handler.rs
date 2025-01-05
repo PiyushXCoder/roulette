@@ -2,21 +2,19 @@ use std::{collections::HashMap, sync::Arc};
 
 use rocket::{
     serde::json,
-    tokio::sync::{
-        mpsc::{self, Sender},
-        Mutex,
-    },
+    tokio::sync::{mpsc::Sender, Mutex},
 };
 use rocket_ws::Message;
 use uuid::Uuid;
 
 use crate::{
-    structs,
+    spin_timmer,
+    structs::Placement,
     ws_messages::{self, RequestMessages, ResponseMessages},
     ArcGame,
 };
 
-use self::structs::{Bet, Player, PlayerId, Table, TableId, Timmer};
+use crate::structs::{Bet, Player, PlayerId, Table, TableId, Timmer};
 
 pub(crate) async fn handle(
     message: Message,
@@ -65,6 +63,7 @@ pub(crate) async fn handle(
         RequestMessages::AddBet {
             label,
             placement,
+            local_position,
             amount,
         } => {
             if current_player_id.is_none() || current_table_id.is_none() {
@@ -78,7 +77,8 @@ pub(crate) async fn handle(
                 curent_player_id_ref,
                 current_table_id_ref,
                 &label,
-                &placement,
+                placement,
+                local_position,
                 amount,
             )
             .await;
@@ -116,7 +116,7 @@ pub(crate) async fn handle(
 
 pub(crate) async fn join_table(
     game: ArcGame,
-    sender: Sender<ResponseMessages>,
+    ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &mut Option<Uuid>,
     current_table_id: &mut Option<TableId>,
     table_id: String,
@@ -129,28 +129,37 @@ pub(crate) async fn join_table(
             let mut players = table.players.lock().await;
             match players.get_mut(&player_id) {
                 Some(player) => {
-                    player.sender_channel = sender.clone();
+                    player.ws_channel_sender = ws_channel_sender.clone();
                 }
                 None => {
                     players
-                        .insert(player_id, Player::new(sender.clone(), Vec::new()))
+                        .insert(
+                            player_id,
+                            Player::new(ws_channel_sender.clone(), Vec::new()),
+                        )
                         .unwrap();
                 }
             }
         }
         None => {
+            let last_timestamp = Arc::new(Mutex::new(None));
+            let players = Arc::new(Mutex::new(HashMap::new()));
             tables
                 .insert(
                     table_id.clone(),
                     Table::new(
-                        Arc::new(Mutex::new(HashMap::new())),
-                        Timmer::new(spawn_timmer().await, Arc::new(Mutex::new(None))),
+                        players.clone(),
+                        Timmer::new(
+                            spin_timmer::spawn_spin_timmer(last_timestamp.clone(), players.clone())
+                                .await,
+                            last_timestamp,
+                        ),
                     ),
                 )
                 .unwrap();
         }
     }
-    sender
+    ws_channel_sender
         .send(ResponseMessages::JoinTable { player_id })
         .await
         .expect("Unable to send to sender channel of websocket");
@@ -160,7 +169,7 @@ pub(crate) async fn join_table(
 
 pub(crate) async fn get_status(
     game: ArcGame,
-    sender: Sender<ResponseMessages>,
+    ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &PlayerId,
     current_table_id: &TableId,
 ) {
@@ -171,7 +180,7 @@ pub(crate) async fn get_status(
     let resp = ResponseMessages::Status {
         status: ws_messages::Status::from_table(table, player, current_player_id),
     };
-    sender
+    ws_channel_sender
         .send(resp)
         .await
         .expect("Unable to send to sender channel of websocket");
@@ -179,11 +188,12 @@ pub(crate) async fn get_status(
 
 pub(crate) async fn add_bet(
     game: ArcGame,
-    sender: Sender<ResponseMessages>,
+    ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &PlayerId,
     current_table_id: &TableId,
     label: &str,
-    placement: &str,
+    placement: Placement,
+    local_position: (i32, i32),
     amount: u32,
 ) {
     let tables = game.tables.lock().await;
@@ -197,17 +207,26 @@ pub(crate) async fn add_bet(
     let player = players
         .get_mut(current_player_id)
         .expect("Player not found!");
-    player
-        .bets
-        .push(Bet::new(label.to_string(), placement.to_string(), amount));
+
+    let total_bet = player.bets.iter().map(|bet| bet.amount).sum::<u32>() + amount;
+    if total_bet > player.balance {
+        return;
+    }
+
+    player.bets.push(Bet::new(
+        label.to_string(),
+        placement,
+        local_position,
+        amount,
+    ));
 
     let resp = ResponseMessages::AddBet {
-        bet: ws_messages::Bet::new(label.to_string(), placement.to_string(), amount),
+        bet: ws_messages::Bet::new(label.to_string(), placement, amount),
         balance: player.balance,
-        total_bet: player.bets.iter().map(|bet| bet.amount).sum(),
+        total_bet,
     };
 
-    sender
+    ws_channel_sender
         .send(resp)
         .await
         .expect("Unable to send to sender channel of websocket");
@@ -215,7 +234,7 @@ pub(crate) async fn add_bet(
 
 pub(crate) async fn clear_bets(
     game: ArcGame,
-    sender: Sender<ResponseMessages>,
+    ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &PlayerId,
     current_table_id: &TableId,
 ) {
@@ -231,7 +250,7 @@ pub(crate) async fn clear_bets(
         .get_mut(current_player_id)
         .expect("player not found!");
     player.bets = Vec::new();
-    sender
+    ws_channel_sender
         .send(ResponseMessages::ClearBets)
         .await
         .expect("Unable to send to sender channel of websocket");
@@ -239,15 +258,27 @@ pub(crate) async fn clear_bets(
 
 pub(crate) async fn request_spin(
     game: ArcGame,
-    sender: Sender<ResponseMessages>,
+    ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &PlayerId,
     current_table_id: &TableId,
 ) {
     let tables = game.tables.lock().await;
     let table = tables.get(current_table_id).expect("table not found!");
+
+    if table.spin_requests.contains(current_player_id) {
+        return;
+    }
+
     let players = table.players.lock().await;
     let player = players.get(current_player_id).expect("player not found!");
     if player.bets.len() == 0 {
         return;
     }
+
+    let number_of_requestables = players
+        .iter()
+        .filter(|(_, player)| !player.ws_channel_sender.is_closed())
+        .count();
+
+    //TODO: Add logic to send spin request to spinner task
 }

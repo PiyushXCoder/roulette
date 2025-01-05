@@ -85,6 +85,7 @@ name = "backend"
 version = "0.1.0"
 dependencies = [
  "log",
+ "rand",
  "rocket",
  "rocket_ws",
  "serde",

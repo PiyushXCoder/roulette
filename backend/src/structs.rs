@@ -1,11 +1,12 @@
 use rocket::tokio::sync::{mpsc::Sender, Mutex};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
 };
 use uuid::Uuid;
 
-use crate::ws_messages::ResponseMessages;
+use crate::{spin_timmer::SpinTimmer, ws_messages::ResponseMessages};
 
 pub(crate) const DEFAULT_BALANCE: u32 = 2500;
 
@@ -24,20 +25,34 @@ pub(crate) struct Table {
 }
 
 pub(crate) struct Player {
-    pub(crate) sender_channel: Sender<ResponseMessages>,
+    pub(crate) ws_channel_sender: Sender<ResponseMessages>,
     pub(crate) bets: Vec<Bet>,
     pub(crate) balance: u32,
 }
 
 pub(crate) struct Bet {
     pub(crate) label: String,
-    pub(crate) placement: String,
+    pub(crate) placement: Placement,
+    pub(crate) local_position: (i32, i32),
     pub(crate) amount: u32,
 }
 
 pub(crate) struct Timmer {
-    pub(crate) sender_channel: Sender<Timestamp>,
+    pub(crate) sender_channel: Sender<SpinTimmer>,
     pub(crate) last_timestamp: Arc<Mutex<Option<Timestamp>>>,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
+pub(crate) enum Placement {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    Left,
+    Right,
+    Top,
+    Bottom,
+    Center,
 }
 
 impl Default for Game {
@@ -59,9 +74,9 @@ impl Table {
 }
 
 impl Player {
-    pub(crate) fn new(sender_channel: Sender<ResponseMessages>, bets: Vec<Bet>) -> Self {
+    pub(crate) fn new(ws_channel_sender: Sender<ResponseMessages>, bets: Vec<Bet>) -> Self {
         Self {
-            sender_channel,
+            ws_channel_sender,
             bets,
             balance: DEFAULT_BALANCE,
         }
@@ -69,10 +84,16 @@ impl Player {
 }
 
 impl Bet {
-    pub(crate) fn new(label: String, placement: String, amount: u32) -> Self {
+    pub(crate) fn new(
+        label: String,
+        placement: Placement,
+        local_position: (i32, i32),
+        amount: u32,
+    ) -> Self {
         Self {
             label,
             placement,
+            local_position,
             amount,
         }
     }
@@ -80,7 +101,7 @@ impl Bet {
 
 impl Timmer {
     pub(crate) fn new(
-        sender_channel: Sender<Timestamp>,
+        sender_channel: Sender<SpinTimmer>,
         last_timestamp: Arc<Mutex<Option<Timestamp>>>,
     ) -> Self {
         Self {
