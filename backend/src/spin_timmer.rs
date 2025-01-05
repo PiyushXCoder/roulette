@@ -16,7 +16,7 @@ use self::structs::{Player, PlayerId, Timestamp};
 
 const NUMBER_OF_OPTIONS: u32 = 37;
 
-pub(crate) enum SpinTimmer {
+pub(crate) enum SpinTimmerMessages {
     NewRequest { timestamp: Timestamp },
     SudoRequest,
 }
@@ -24,9 +24,9 @@ pub(crate) enum SpinTimmer {
 pub(crate) async fn spawn_spin_timmer(
     last_timestamp: Arc<Mutex<Option<Timestamp>>>,
     players: Arc<Mutex<HashMap<PlayerId, Player>>>,
-) -> Sender<SpinTimmer> {
+) -> Sender<SpinTimmerMessages> {
     let (spin_timmer_channel_sender, mut spin_timmer_channel_receiver) =
-        mpsc::channel::<SpinTimmer>(10);
+        mpsc::channel::<SpinTimmerMessages>(10);
     let mut interval = time::interval(Duration::from_secs(60));
 
     tokio::spawn(async move {
@@ -43,14 +43,14 @@ pub(crate) async fn spawn_spin_timmer(
                 Some(message) = spin_timmer_channel_receiver.recv() => {
                     let mut last_timestamp_ref = last_timestamp.lock().await;
                     match message {
-                        SpinTimmer::NewRequest {timestamp} => {
+                        SpinTimmerMessages::NewRequest {timestamp} => {
                             if  last_timestamp_ref.is_none() {
                                 interval.reset();
                                 *last_timestamp_ref = Some(timestamp);
                                 broadcast_response_message(players.clone(), ResponseMessages::BeginSpinTimmer {start: timestamp}).await;
                             }
                         }
-                        SpinTimmer::SudoRequest => {
+                        SpinTimmerMessages::SudoRequest => {
                             broadcast_spin_response_message(players.clone()).await;
                             interval.reset();
                             *last_timestamp_ref = None;

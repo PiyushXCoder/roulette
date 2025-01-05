@@ -14,7 +14,9 @@ use crate::{
     ArcGame,
 };
 
-use crate::structs::{Bet, Player, PlayerId, Table, TableId, Timmer};
+use crate::structs::{Bet, Player, PlayerId, SpinTimmer, Table, TableId};
+
+use self::spin_timmer::SpinTimmerMessages;
 
 pub(crate) async fn handle(
     message: Message,
@@ -149,7 +151,7 @@ pub(crate) async fn join_table(
                     table_id.clone(),
                     Table::new(
                         players.clone(),
-                        Timmer::new(
+                        SpinTimmer::new(
                             spin_timmer::spawn_spin_timmer(last_timestamp.clone(), players.clone())
                                 .await,
                             last_timestamp,
@@ -258,12 +260,12 @@ pub(crate) async fn clear_bets(
 
 pub(crate) async fn request_spin(
     game: ArcGame,
-    ws_channel_sender: Sender<ResponseMessages>,
+    _ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &PlayerId,
     current_table_id: &TableId,
 ) {
-    let tables = game.tables.lock().await;
-    let table = tables.get(current_table_id).expect("table not found!");
+    let mut tables = game.tables.lock().await;
+    let table = tables.get_mut(current_table_id).expect("table not found!");
 
     if table.spin_requests.contains(current_player_id) {
         return;
@@ -280,5 +282,22 @@ pub(crate) async fn request_spin(
         .filter(|(_, player)| !player.ws_channel_sender.is_closed())
         .count();
 
-    //TODO: Add logic to send spin request to spinner task
+    if number_of_requestables == table.spin_requests.len() {
+        table
+            .spin_timmer
+            .spin_timmer_channel_sender
+            .send(SpinTimmerMessages::SudoRequest)
+            .await
+            .expect("Failed to send spin request");
+    } else {
+        table
+            .spin_timmer
+            .spin_timmer_channel_sender
+            .send(SpinTimmerMessages::NewRequest {
+                timestamp: chrono::offset::Utc::now().timestamp(),
+            })
+            .await
+            .expect("Failed to send spin request");
+        table.spin_requests.insert(current_player_id.to_owned());
+    }
 }

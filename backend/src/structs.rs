@@ -6,11 +6,11 @@ use std::{
 };
 use uuid::Uuid;
 
-use crate::{spin_timmer::SpinTimmer, ws_messages::ResponseMessages};
+use crate::{spin_timmer::SpinTimmerMessages, ws_messages::ResponseMessages};
 
 pub(crate) const DEFAULT_BALANCE: u32 = 2500;
 
-pub(crate) type Timestamp = u64;
+pub(crate) type Timestamp = i64;
 pub(crate) type TableId = String;
 pub(crate) type PlayerId = Uuid;
 
@@ -21,7 +21,7 @@ pub(crate) struct Game {
 pub(crate) struct Table {
     pub(crate) players: Arc<Mutex<HashMap<PlayerId, Player>>>,
     pub(crate) spin_requests: HashSet<PlayerId>,
-    pub(crate) timmer: Timmer,
+    pub(crate) spin_timmer: SpinTimmer,
 }
 
 pub(crate) struct Player {
@@ -37,8 +37,9 @@ pub(crate) struct Bet {
     pub(crate) amount: u32,
 }
 
-pub(crate) struct Timmer {
-    pub(crate) sender_channel: Sender<SpinTimmer>,
+pub(crate) struct SpinTimmer {
+    pub(crate) spin_timmer_channel_sender: Sender<SpinTimmerMessages>,
+    #[allow(unused)]
     pub(crate) last_timestamp: Arc<Mutex<Option<Timestamp>>>,
 }
 
@@ -64,10 +65,10 @@ impl Default for Game {
 }
 
 impl Table {
-    pub(crate) fn new(players: Arc<Mutex<HashMap<PlayerId, Player>>>, timmer: Timmer) -> Self {
+    pub(crate) fn new(players: Arc<Mutex<HashMap<PlayerId, Player>>>, timmer: SpinTimmer) -> Self {
         Self {
             players,
-            timmer,
+            spin_timmer: timmer,
             spin_requests: HashSet::new(),
         }
     }
@@ -99,13 +100,13 @@ impl Bet {
     }
 }
 
-impl Timmer {
+impl SpinTimmer {
     pub(crate) fn new(
-        sender_channel: Sender<SpinTimmer>,
+        sender_channel: Sender<SpinTimmerMessages>,
         last_timestamp: Arc<Mutex<Option<Timestamp>>>,
     ) -> Self {
         Self {
-            sender_channel,
+            spin_timmer_channel_sender: sender_channel,
             last_timestamp,
         }
     }
