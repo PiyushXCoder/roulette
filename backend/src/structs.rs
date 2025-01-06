@@ -50,14 +50,23 @@ pub(crate) struct SpinTimmer {
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub(crate) enum Placement {
+    #[serde(rename = "topleft")]
     TopLeft,
+    #[serde(rename = "topright")]
     TopRight,
+    #[serde(rename = "bottomleft")]
     BottomLeft,
+    #[serde(rename = "bottomright")]
     BottomRight,
+    #[serde(rename = "left")]
     Left,
+    #[serde(rename = "right")]
     Right,
+    #[serde(rename = "top")]
     Top,
+    #[serde(rename = "bottom")]
     Bottom,
+    #[serde(rename = "center")]
     Center,
 }
 
