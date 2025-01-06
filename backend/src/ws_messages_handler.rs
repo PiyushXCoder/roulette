@@ -24,13 +24,13 @@ pub(crate) async fn handle(
     ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &mut Option<PlayerId>,
     current_table_id: &mut Option<TableId>,
-) {
+) -> anyhow::Result<()> {
     let request_message: RequestMessages = match message {
         Message::Text(text) => match json::from_str(&text) {
             Ok(req) => req,
-            Err(_) => return,
+            Err(_) => return Ok(()),
         },
-        _ => return,
+        _ => return Ok(()),
     };
 
     match request_message {
@@ -46,11 +46,11 @@ pub(crate) async fn handle(
                 table_id,
                 player_id,
             )
-            .await;
+            .await?;
         }
         RequestMessages::GetStatus => {
             if current_player_id.is_none() || current_table_id.is_none() {
-                return;
+                return Ok(());
             }
             let current_table_id_ref = current_table_id.as_ref().unwrap();
             let curent_player_id_ref = current_player_id.as_ref().unwrap();
@@ -60,7 +60,7 @@ pub(crate) async fn handle(
                 &curent_player_id_ref,
                 &current_table_id_ref,
             )
-            .await;
+            .await?;
         }
         RequestMessages::AddBet {
             label,
@@ -69,7 +69,7 @@ pub(crate) async fn handle(
             amount,
         } => {
             if current_player_id.is_none() || current_table_id.is_none() {
-                return;
+                return Ok(());
             }
             let current_table_id_ref = current_table_id.as_ref().unwrap();
             let curent_player_id_ref = current_player_id.as_ref().unwrap();
@@ -83,11 +83,11 @@ pub(crate) async fn handle(
                 local_position,
                 amount,
             )
-            .await;
+            .await?;
         }
         RequestMessages::ClearBets => {
             if current_player_id.is_none() || current_table_id.is_none() {
-                return;
+                return Ok(());
             }
             let current_table_id_ref = current_table_id.as_ref().unwrap();
             let curent_player_id_ref = current_player_id.as_ref().unwrap();
@@ -97,11 +97,11 @@ pub(crate) async fn handle(
                 &curent_player_id_ref,
                 &current_table_id_ref,
             )
-            .await;
+            .await?;
         }
         RequestMessages::RequestSpin => {
             if current_player_id.is_none() || current_table_id.is_none() {
-                return;
+                return Ok(());
             }
             let current_table_id_ref = current_table_id.as_ref().unwrap();
             let curent_player_id_ref = current_player_id.as_ref().unwrap();
@@ -111,9 +111,10 @@ pub(crate) async fn handle(
                 &curent_player_id_ref,
                 &current_table_id_ref,
             )
-            .await;
+            .await?;
         }
     };
+    return Ok(());
 }
 
 pub(crate) async fn join_table(
@@ -123,7 +124,7 @@ pub(crate) async fn join_table(
     current_table_id: &mut Option<TableId>,
     table_id: String,
     player_id: Option<Uuid>,
-) {
+) -> anyhow::Result<()> {
     let player_id = player_id.unwrap_or(Uuid::new_v4());
     let mut tables = game.tables.lock().await;
     match tables.get_mut(&table_id) {
@@ -134,39 +135,35 @@ pub(crate) async fn join_table(
                     player.ws_channel_sender = ws_channel_sender.clone();
                 }
                 None => {
-                    players
-                        .insert(
-                            player_id,
-                            Player::new(ws_channel_sender.clone(), Vec::new()),
-                        )
-                        .unwrap();
+                    players.insert(
+                        player_id,
+                        Player::new(ws_channel_sender.clone(), Vec::new()),
+                    );
                 }
             }
         }
         None => {
             let last_timestamp = Arc::new(Mutex::new(None));
             let players = Arc::new(Mutex::new(HashMap::new()));
-            tables
-                .insert(
-                    table_id.clone(),
-                    Table::new(
-                        players.clone(),
-                        SpinTimmer::new(
-                            spin_timmer::spawn_spin_timmer(last_timestamp.clone(), players.clone())
-                                .await,
-                            last_timestamp,
-                        ),
+            tables.insert(
+                table_id.clone(),
+                Table::new(
+                    players.clone(),
+                    SpinTimmer::new(
+                        spin_timmer::spawn_spin_timmer(last_timestamp.clone(), players.clone())
+                            .await,
+                        last_timestamp,
                     ),
-                )
-                .unwrap();
+                ),
+            );
         }
     }
     ws_channel_sender
         .send(ResponseMessages::JoinTable { player_id })
-        .await
-        .expect("Unable to send to sender channel of websocket");
+        .await?;
     *current_player_id = Some(player_id);
     *current_table_id = Some(table_id);
+    Ok(())
 }
 
 pub(crate) async fn get_status(
@@ -174,18 +171,20 @@ pub(crate) async fn get_status(
     ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &PlayerId,
     current_table_id: &TableId,
-) {
+) -> anyhow::Result<()> {
     let tables = game.tables.lock().await;
-    let table = tables.get(current_table_id).expect("Table not found!");
+    let table = tables
+        .get(current_table_id)
+        .ok_or(anyhow::anyhow!("Table not found"))?;
     let players = table.players.lock().await;
-    let player = players.get(current_player_id).expect("Player not found!");
+    let player = players
+        .get(current_player_id)
+        .ok_or(anyhow::anyhow!("Player not found!"))?;
     let resp = ResponseMessages::Status {
         status: ws_messages::Status::from_table(table, player, current_player_id),
     };
-    ws_channel_sender
-        .send(resp)
-        .await
-        .expect("Unable to send to sender channel of websocket");
+    ws_channel_sender.send(resp).await?;
+    Ok(())
 }
 
 pub(crate) async fn add_bet(
@@ -197,22 +196,24 @@ pub(crate) async fn add_bet(
     placement: Placement,
     local_position: (i32, i32),
     amount: u32,
-) {
+) -> anyhow::Result<()> {
     let tables = game.tables.lock().await;
-    let table = tables.get(current_table_id).expect("Table not found!");
+    let table = tables
+        .get(current_table_id)
+        .ok_or(anyhow::anyhow!("Table not found"))?;
 
     if table.spin_requests.contains(current_player_id) {
-        return;
+        return Ok(());
     }
 
     let mut players = table.players.lock().await;
     let player = players
         .get_mut(current_player_id)
-        .expect("Player not found!");
+        .ok_or(anyhow::anyhow!("Player not found!"))?;
 
     let total_bet = player.bets.iter().map(|bet| bet.amount).sum::<u32>() + amount;
     if total_bet > player.balance {
-        return;
+        return Ok(());
     }
 
     player.bets.push(Bet::new(
@@ -228,10 +229,8 @@ pub(crate) async fn add_bet(
         total_bet,
     };
 
-    ws_channel_sender
-        .send(resp)
-        .await
-        .expect("Unable to send to sender channel of websocket");
+    ws_channel_sender.send(resp).await?;
+    Ok(())
 }
 
 pub(crate) async fn clear_bets(
@@ -239,23 +238,23 @@ pub(crate) async fn clear_bets(
     ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &PlayerId,
     current_table_id: &TableId,
-) {
+) -> anyhow::Result<()> {
     let tables = game.tables.lock().await;
-    let table = tables.get(current_table_id).expect("table not found!");
+    let table = tables
+        .get(current_table_id)
+        .ok_or(anyhow::anyhow!("Table not found"))?;
 
     if table.spin_requests.contains(current_player_id) {
-        return;
+        return Ok(());
     }
 
     let mut players = table.players.lock().await;
     let player = players
         .get_mut(current_player_id)
-        .expect("player not found!");
+        .ok_or(anyhow::anyhow!("Player not found!"))?;
     player.bets = Vec::new();
-    ws_channel_sender
-        .send(ResponseMessages::ClearBets)
-        .await
-        .expect("Unable to send to sender channel of websocket");
+    ws_channel_sender.send(ResponseMessages::ClearBets).await?;
+    Ok(())
 }
 
 pub(crate) async fn request_spin(
@@ -263,18 +262,22 @@ pub(crate) async fn request_spin(
     _ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &PlayerId,
     current_table_id: &TableId,
-) {
+) -> anyhow::Result<()> {
     let mut tables = game.tables.lock().await;
-    let table = tables.get_mut(current_table_id).expect("table not found!");
+    let table = tables
+        .get_mut(current_table_id)
+        .ok_or(anyhow::anyhow!("Table not found"))?;
 
     if table.spin_requests.contains(current_player_id) {
-        return;
+        return Ok(());
     }
 
     let players = table.players.lock().await;
-    let player = players.get(current_player_id).expect("player not found!");
+    let player = players
+        .get(current_player_id)
+        .ok_or(anyhow::anyhow!("Player not found!"))?;
     if player.bets.len() == 0 {
-        return;
+        return Ok(());
     }
 
     let number_of_requestables = players
@@ -287,8 +290,7 @@ pub(crate) async fn request_spin(
             .spin_timmer
             .spin_timmer_channel_sender
             .send(SpinTimmerMessages::SudoRequest)
-            .await
-            .expect("Failed to send spin request");
+            .await?;
     } else {
         table
             .spin_timmer
@@ -296,8 +298,9 @@ pub(crate) async fn request_spin(
             .send(SpinTimmerMessages::NewRequest {
                 timestamp: chrono::offset::Utc::now().timestamp(),
             })
-            .await
-            .expect("Failed to send spin request");
+            .await?;
         table.spin_requests.insert(current_player_id.to_owned());
     }
+
+    Ok(())
 }

@@ -34,7 +34,15 @@ async fn game_ws<'a>(ws: ws::WebSocket, tables: &State<ArcGame>) -> ws::Channel<
                 select! {
                     Some(message) = stream.next() => {
                         match message {
-                            Ok(message) => ws_messages_handler::handle(message, tables.clone(), ws_channel_sender.clone(), &mut current_player_id, &mut current_table_id).await,
+                            Ok(message) => {
+                                match ws_messages_handler::handle(message, tables.clone(), ws_channel_sender.clone(), &mut current_player_id, &mut current_table_id).await {
+                                    Ok(()) => {},
+                                    Err(e) => {
+                                        log::error!("{:?}", e);
+                                        continue;
+                                    }
+                                }
+                            },
                             Err(e) => {
                                 log::error!("{:?}", e);
                                 break;
@@ -42,8 +50,21 @@ async fn game_ws<'a>(ws: ws::WebSocket, tables: &State<ArcGame>) -> ws::Channel<
                         }
                     },
                     Some(message) = ws_channel_receiver.recv() => {
-                        stream.send(Message::Text(json::to_string(&message)
-                                .expect("Failed to parse to json!"))).await.expect("Problem with websocket!");
+                        let message_as_json = match json::to_string(&message) {
+                            Ok(m) => m,
+                            Err(e) => {
+                                log::error!("{:?}", e);
+                                continue;
+                            }
+                        };
+
+                        match stream.send(Message::Text(message_as_json)).await {
+                            Ok(())=> {},
+                            Err(e) => {
+                                log::error!("{:?}", e);
+                                continue;
+                            }
+                        };
                     }
                 }
             }
