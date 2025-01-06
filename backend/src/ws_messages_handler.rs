@@ -28,7 +28,14 @@ pub(crate) async fn handle(
     let request_message: RequestMessages = match message {
         Message::Text(text) => match json::from_str(&text) {
             Ok(req) => req,
-            Err(_) => return Ok(()),
+            Err(e) => {
+                ws_channel_sender
+                    .send(ResponseMessages::Error {
+                        msg: format!("Bad Request: {:?}", e.to_string()).into(),
+                    })
+                    .await?;
+                return Ok(());
+            }
         },
         _ => return Ok(()),
     };
@@ -50,6 +57,11 @@ pub(crate) async fn handle(
         }
         RequestMessages::GetStatus => {
             if current_player_id.is_none() || current_table_id.is_none() {
+                ws_channel_sender
+                    .send(ResponseMessages::Error {
+                        msg: "No table has been joined".into(),
+                    })
+                    .await?;
                 return Ok(());
             }
             let current_table_id_ref = current_table_id.as_ref().unwrap();
@@ -69,6 +81,11 @@ pub(crate) async fn handle(
             amount,
         } => {
             if current_player_id.is_none() || current_table_id.is_none() {
+                ws_channel_sender
+                    .send(ResponseMessages::Error {
+                        msg: "No table has been joined".into(),
+                    })
+                    .await?;
                 return Ok(());
             }
             let current_table_id_ref = current_table_id.as_ref().unwrap();
@@ -87,6 +104,11 @@ pub(crate) async fn handle(
         }
         RequestMessages::ClearBets => {
             if current_player_id.is_none() || current_table_id.is_none() {
+                ws_channel_sender
+                    .send(ResponseMessages::Error {
+                        msg: "No table has been joined".into(),
+                    })
+                    .await?;
                 return Ok(());
             }
             let current_table_id_ref = current_table_id.as_ref().unwrap();
@@ -101,6 +123,11 @@ pub(crate) async fn handle(
         }
         RequestMessages::RequestSpin => {
             if current_player_id.is_none() || current_table_id.is_none() {
+                ws_channel_sender
+                    .send(ResponseMessages::Error {
+                        msg: "No table has been joined".into(),
+                    })
+                    .await?;
                 return Ok(());
             }
             let current_table_id_ref = current_table_id.as_ref().unwrap();
@@ -203,6 +230,11 @@ pub(crate) async fn add_bet(
         .ok_or(anyhow::anyhow!("Table not found"))?;
 
     if table.spin_requests.contains(current_player_id) {
+        ws_channel_sender
+            .send(ResponseMessages::Error {
+                msg: "Already requested for spin".into(),
+            })
+            .await?;
         return Ok(());
     }
 
@@ -245,6 +277,11 @@ pub(crate) async fn clear_bets(
         .ok_or(anyhow::anyhow!("Table not found"))?;
 
     if table.spin_requests.contains(current_player_id) {
+        ws_channel_sender
+            .send(ResponseMessages::Error {
+                msg: "No table has been joined".into(),
+            })
+            .await?;
         return Ok(());
     }
 
@@ -259,7 +296,7 @@ pub(crate) async fn clear_bets(
 
 pub(crate) async fn request_spin(
     game: ArcGame,
-    _ws_channel_sender: Sender<ResponseMessages>,
+    ws_channel_sender: Sender<ResponseMessages>,
     current_player_id: &PlayerId,
     current_table_id: &TableId,
 ) -> anyhow::Result<()> {
@@ -269,6 +306,11 @@ pub(crate) async fn request_spin(
         .ok_or(anyhow::anyhow!("Table not found"))?;
 
     if table.spin_requests.contains(current_player_id) {
+        ws_channel_sender
+            .send(ResponseMessages::Error {
+                msg: "No table has been joined".into(),
+            })
+            .await?;
         return Ok(());
     }
 
@@ -277,6 +319,11 @@ pub(crate) async fn request_spin(
         .get(current_player_id)
         .ok_or(anyhow::anyhow!("Player not found!"))?;
     if player.bets.len() == 0 {
+        ws_channel_sender
+            .send(ResponseMessages::Error {
+                msg: "No bets added".into(),
+            })
+            .await?;
         return Ok(());
     }
 

@@ -14,22 +14,26 @@ pub(crate) type Timestamp = i64;
 pub(crate) type TableId = String;
 pub(crate) type PlayerId = Uuid;
 
+#[derive(Debug)]
 pub(crate) struct Game {
     pub(crate) tables: Arc<Mutex<HashMap<TableId, Table>>>,
 }
 
+#[derive(Debug)]
 pub(crate) struct Table {
     pub(crate) players: Arc<Mutex<HashMap<PlayerId, Player>>>,
     pub(crate) spin_requests: HashSet<PlayerId>,
     pub(crate) spin_timmer: SpinTimmer,
 }
 
+#[derive(Debug)]
 pub(crate) struct Player {
     pub(crate) ws_channel_sender: Sender<ResponseMessages>,
     pub(crate) bets: Vec<Bet>,
     pub(crate) balance: u32,
 }
 
+#[derive(Debug)]
 pub(crate) struct Bet {
     pub(crate) label: String,
     pub(crate) placement: Placement,
@@ -37,6 +41,7 @@ pub(crate) struct Bet {
     pub(crate) amount: u32,
 }
 
+#[derive(Debug)]
 pub(crate) struct SpinTimmer {
     pub(crate) spin_timmer_channel_sender: Sender<SpinTimmerMessages>,
     #[allow(unused)]
