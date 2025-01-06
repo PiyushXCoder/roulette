@@ -23,6 +23,7 @@ pub(crate) enum RequestMessages {
     GetStatus,
 }
 
+#[allow(unused)]
 #[derive(Debug, Serialize, Clone)]
 pub(crate) enum ResponseMessages {
     JoinTable {
