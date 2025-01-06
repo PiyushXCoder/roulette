@@ -35,13 +35,18 @@ async fn game_ws<'a>(ws: ws::WebSocket, tables: &State<ArcGame>) -> ws::Channel<
                     Some(message) = stream.next() => {
                         match message {
                             Ok(message) => {
-                                match ws_messages_handler::handle(message, tables.clone(), ws_channel_sender.clone(), &mut current_player_id, &mut current_table_id).await {
-                                    Ok(()) => {},
-                                    Err(e) => {
-                                        log::error!("{:?}", e);
-                                        continue;
+                                match message {
+                                    Message::Close(_) => { break;}
+                                    _ => {
+                                        match ws_messages_handler::handle(message, tables.clone(), ws_channel_sender.clone(), &mut current_player_id, &mut current_table_id).await {
+                                            Ok(()) => {},
+                                            Err(e) => {
+                                                log::error!("{:?}", e);
+                                                continue;
+                                            }
+                                        }
                                     }
-                                }
+                                };
                             },
                             Err(e) => {
                                 log::error!("{:?}", e);
