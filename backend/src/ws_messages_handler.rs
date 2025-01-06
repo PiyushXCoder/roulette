@@ -228,7 +228,7 @@ pub(crate) async fn add_bet(
     label: &str,
     placement: Placement,
     local_position: (i32, i32),
-    amount: u32,
+    amount: i32,
 ) -> anyhow::Result<()> {
     let tables = game.tables.lock().await;
     let table = tables
@@ -249,7 +249,7 @@ pub(crate) async fn add_bet(
         .get_mut(current_player_id)
         .ok_or(anyhow::anyhow!("Player not found!"))?;
 
-    let total_bet = player.bets.iter().map(|bet| bet.amount).sum::<u32>() + amount;
+    let total_bet = player.bets.iter().map(|bet| bet.amount).sum::<i32>() + amount;
     if total_bet > player.balance {
         return Ok(());
     }
@@ -338,7 +338,7 @@ pub(crate) async fn request_spin(
         .filter(|(_, player)| !player.ws_channel_sender.is_closed())
         .count();
 
-    if number_of_requestables == table.spin_requests.len() {
+    if number_of_requestables == table.spin_requests.len() + 1 {
         table
             .spin_timmer
             .spin_timmer_channel_sender

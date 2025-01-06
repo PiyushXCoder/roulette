@@ -15,8 +15,8 @@ const BOX_COLOR_MAP: [BoxType; 36] = [
 const BOX_SIZE: i32 = 10; // Used for 0 as it shares edge with 3 blocks
 
 pub(crate) struct Judgement {
-    pub(crate) winning_amount: u32,
-    pub(crate) bet_amount: u32,
+    pub(crate) winning_amount: i32,
+    pub(crate) bet_amount: i32,
 }
 
 fn sanitize(num: i32) -> String {

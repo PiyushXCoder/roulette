@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{spin_timmer::SpinTimmerMessages, ws_messages::ResponseMessages};
 
-pub(crate) const DEFAULT_BALANCE: u32 = 2500;
+pub(crate) const DEFAULT_BALANCE: i32 = 2500;
 
 pub(crate) type Timestamp = i64;
 pub(crate) type TableId = String;
@@ -30,7 +30,7 @@ pub(crate) struct Table {
 pub(crate) struct Player {
     pub(crate) ws_channel_sender: Sender<ResponseMessages>,
     pub(crate) bets: Vec<Bet>,
-    pub(crate) balance: u32,
+    pub(crate) balance: i32,
 }
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ pub(crate) struct Bet {
     pub(crate) label: String,
     pub(crate) placement: Placement,
     pub(crate) local_position: (i32, i32),
-    pub(crate) amount: u32,
+    pub(crate) amount: i32,
 }
 
 #[derive(Debug)]
@@ -103,7 +103,7 @@ impl Bet {
         label: String,
         placement: Placement,
         local_position: (i32, i32),
-        amount: u32,
+        amount: i32,
     ) -> Self {
         Self {
             label,

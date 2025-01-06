@@ -76,7 +76,7 @@ pub(crate) async fn broadcast_spin_response_message(
         }
 
         let judgement = judge_player(&player.bets, lucky_number).await;
-        player.balance -= judgement.winning_amount - judgement.bet_amount;
+        player.balance += judgement.winning_amount - judgement.bet_amount;
         if player.balance < judgement.bet_amount {
             player.bets = Vec::new();
         }
