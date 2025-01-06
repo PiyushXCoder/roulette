@@ -171,7 +171,13 @@ pub(crate) async fn join_table(
         }
         None => {
             let last_timestamp = Arc::new(Mutex::new(None));
-            let players = Arc::new(Mutex::new(HashMap::new()));
+            let mut players_hashmap = HashMap::new();
+            players_hashmap.insert(
+                player_id,
+                Player::new(ws_channel_sender.clone(), Vec::new()),
+            );
+            let players = Arc::new(Mutex::new(players_hashmap));
+
             tables.insert(
                 table_id.clone(),
                 Table::new(
