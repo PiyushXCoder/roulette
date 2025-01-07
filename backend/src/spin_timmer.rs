@@ -36,7 +36,9 @@ pub(crate) async fn spawn_spin_timmer(
                     if last_timestamp.lock().await.is_none() {
                         continue;
                     }
-                    broadcast_spin_response_message(players.clone()).await;
+                    if let Err(e) = broadcast_spin_response_message(players.clone()).await {
+                                                            log::error!("{}", e);
+                    }
                     let mut last_timestamp_ref = last_timestamp.lock().await;
                     *last_timestamp_ref = None;
                 }
@@ -47,11 +49,15 @@ pub(crate) async fn spawn_spin_timmer(
                             if  last_timestamp_ref.is_none() {
                                 interval.reset();
                                 *last_timestamp_ref = Some(timestamp);
-                                broadcast_response_message(players.clone(), ResponseMessages::BeginSpinTimmer {start: timestamp}).await;
+                                if let Err(e) = broadcast_response_message(players.clone(), None, ResponseMessages::BeginSpinTimmer {start: timestamp}).await {
+                                    log::error!("{}", e);
+                                }
                             }
                         }
                         SpinTimmerMessages::SudoRequest => {
-                            broadcast_spin_response_message(players.clone()).await;
+                            if let Err(e) = broadcast_spin_response_message(players.clone()).await {
+                                log::error!("{}", e);
+                            }
                             interval.reset();
                             *last_timestamp_ref = None;
                         }
@@ -66,7 +72,7 @@ pub(crate) async fn spawn_spin_timmer(
 
 pub(crate) async fn broadcast_spin_response_message(
     players: Arc<Mutex<HashMap<PlayerId, Player>>>,
-) {
+) -> anyhow::Result<()> {
     let lucky_number = rand::random::<u32>() % (NUMBER_OF_OPTIONS + 1);
 
     let mut players_ref = players.lock().await;
@@ -90,7 +96,7 @@ pub(crate) async fn broadcast_spin_response_message(
         player
             .ws_channel_sender
             .send(response_message.clone())
-            .await
-            .expect("Failed while broadcast");
+            .await?;
     }
+    Ok(())
 }
