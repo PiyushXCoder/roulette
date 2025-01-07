@@ -11,6 +11,7 @@ pub(crate) enum RequestMessages {
     JoinTable {
         table_id: TableId,
         player_id: Option<PlayerId>,
+        name: Arc<str>,
     },
     AddBet {
         label: String,
@@ -21,9 +22,9 @@ pub(crate) enum RequestMessages {
     ClearBets,
     RequestSpin,
     GetStatus,
+    ListPlayers,
 }
 
-#[allow(unused)]
 #[derive(Debug, Serialize, Clone)]
 pub(crate) enum ResponseMessages {
     JoinTable {
@@ -47,6 +48,17 @@ pub(crate) enum ResponseMessages {
     BeginSpinTimmer {
         start: Timestamp,
     },
+    SomePlayerJoined {
+        hash_id: Arc<str>,
+        name: Arc<str>,
+        bet_amount: i32,
+    },
+    SomePlayerLeft {
+        hash_id: Arc<str>,
+    },
+    ListPlayers {
+        players: Vec<Player>,
+    },
     Error {
         msg: Arc<str>,
     },
@@ -64,6 +76,13 @@ pub(crate) struct Bet {
     pub(crate) label: String,
     pub(crate) placement: Placement,
     pub(crate) amount: i32,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub(crate) struct Player {
+    pub(crate) name: Arc<str>,
+    pub(crate) id_hash: Arc<str>,
+    pub(crate) bet_amount: i32,
 }
 
 impl Bet {
@@ -96,6 +115,16 @@ impl From<&structs::Bet> for Bet {
             label: value.label.clone(),
             placement: value.placement.clone(),
             amount: value.amount,
+        }
+    }
+}
+
+impl Player {
+    pub(crate) fn from_player(player: &structs::Player, player_id: &PlayerId) -> Self {
+        Self {
+            name: player.name.clone().into(),
+            id_hash: sha256::digest(player_id.to_string()).into(),
+            bet_amount: player.bets.iter().map(|bet| bet.amount).sum(),
         }
     }
 }

@@ -29,6 +29,7 @@ pub(crate) struct Table {
 #[derive(Debug)]
 pub(crate) struct Player {
     pub(crate) ws_channel_sender: Sender<ResponseMessages>,
+    pub(crate) name: String,
     pub(crate) bets: Vec<Bet>,
     pub(crate) balance: i32,
 }
@@ -89,9 +90,14 @@ impl Table {
 }
 
 impl Player {
-    pub(crate) fn new(ws_channel_sender: Sender<ResponseMessages>, bets: Vec<Bet>) -> Self {
+    pub(crate) fn new(
+        ws_channel_sender: Sender<ResponseMessages>,
+        name: &str,
+        bets: Vec<Bet>,
+    ) -> Self {
         Self {
             ws_channel_sender,
+            name: name.to_owned(),
             bets,
             balance: DEFAULT_BALANCE,
         }

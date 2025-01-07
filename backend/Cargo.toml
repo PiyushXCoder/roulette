@@ -11,4 +11,5 @@ rand = "0.8.5"
 rocket = { version = "0.5.1", features = ["json"] }
 rocket_ws = "0.1.1"
 serde = { version = "1.0.217", features = ["rc"] }
+sha256 = "1.5.0"
 uuid = { version = "1.11.0", features = ["serde", "v4"] }

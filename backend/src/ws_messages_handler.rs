@@ -8,6 +8,7 @@ use rocket_ws::Message;
 use uuid::Uuid;
 
 use crate::{
+    helper::broadcast_response_message,
     spin_timmer,
     structs::Placement,
     ws_messages::{self, RequestMessages, ResponseMessages},
@@ -17,6 +18,33 @@ use crate::{
 use crate::structs::{Bet, Player, PlayerId, SpinTimmer, Table, TableId};
 
 use self::spin_timmer::SpinTimmerMessages;
+
+pub(crate) async fn handle_close(
+    game: ArcGame,
+    current_player_id: &Option<PlayerId>,
+    current_table_id: &Option<TableId>,
+) -> anyhow::Result<()> {
+    if current_player_id.is_none() || current_table_id.is_none() {
+        return Ok(());
+    }
+    let current_table_id = current_table_id.as_ref().unwrap();
+    let current_player_id = current_player_id.as_ref().unwrap();
+
+    let tables = game.tables.lock().await;
+    let table = tables
+        .get(current_table_id)
+        .ok_or(anyhow::anyhow!("Table not found"))?;
+
+    broadcast_response_message(
+        table.players.clone(),
+        Some(vec![current_player_id.to_owned()]),
+        ResponseMessages::SomePlayerLeft {
+            hash_id: sha256::digest(current_player_id.to_string()).into(),
+        },
+    )
+    .await?;
+    Ok(())
+}
 
 pub(crate) async fn handle(
     message: Message,
@@ -44,6 +72,7 @@ pub(crate) async fn handle(
         RequestMessages::JoinTable {
             table_id,
             player_id,
+            name,
         } => {
             join_table(
                 game,
@@ -52,6 +81,7 @@ pub(crate) async fn handle(
                 current_table_id,
                 table_id,
                 player_id,
+                &name,
             )
             .await?;
         }
@@ -140,6 +170,25 @@ pub(crate) async fn handle(
             )
             .await?;
         }
+        RequestMessages::ListPlayers => {
+            if current_player_id.is_none() || current_table_id.is_none() {
+                ws_channel_sender
+                    .send(ResponseMessages::Error {
+                        msg: "No table has been joined".into(),
+                    })
+                    .await?;
+                return Ok(());
+            }
+            let current_table_id_ref = current_table_id.as_ref().unwrap();
+            let curent_player_id_ref = current_player_id.as_ref().unwrap();
+            list_players(
+                game,
+                ws_channel_sender,
+                &curent_player_id_ref,
+                &current_table_id_ref,
+            )
+            .await?;
+        }
     };
     return Ok(());
 }
@@ -151,6 +200,7 @@ pub(crate) async fn join_table(
     current_table_id: &mut Option<TableId>,
     table_id: String,
     player_id: Option<Uuid>,
+    name: &str,
 ) -> anyhow::Result<()> {
     let player_id = player_id.unwrap_or(Uuid::new_v4());
     let mut tables = game.tables.lock().await;
@@ -164,7 +214,7 @@ pub(crate) async fn join_table(
                 None => {
                     players.insert(
                         player_id,
-                        Player::new(ws_channel_sender.clone(), Vec::new()),
+                        Player::new(ws_channel_sender.clone(), name, Vec::new()),
                     );
                 }
             }
@@ -174,7 +224,7 @@ pub(crate) async fn join_table(
             let mut players_hashmap = HashMap::new();
             players_hashmap.insert(
                 player_id,
-                Player::new(ws_channel_sender.clone(), Vec::new()),
+                Player::new(ws_channel_sender.clone(), name, Vec::new()),
             );
             let players = Arc::new(Mutex::new(players_hashmap));
 
@@ -195,7 +245,30 @@ pub(crate) async fn join_table(
         .send(ResponseMessages::JoinTable { player_id })
         .await?;
     *current_player_id = Some(player_id);
-    *current_table_id = Some(table_id);
+    *current_table_id = Some(table_id.clone());
+
+    let tables = game.tables.lock().await;
+    let table = tables
+        .get(&table_id)
+        .ok_or(anyhow::anyhow!("Table not found"))?;
+    let bet_amount;
+    {
+        let players = table.players.lock().await;
+        let player = players
+            .get(&player_id)
+            .ok_or(anyhow::anyhow!("Player not found!"))?;
+        bet_amount = player.bets.iter().map(|bet| bet.amount).sum();
+    }
+    broadcast_response_message(
+        table.players.clone(),
+        Some(vec![player_id]),
+        ResponseMessages::SomePlayerJoined {
+            hash_id: sha256::digest(player_id.to_string()).into(),
+            name: name.into(),
+            bet_amount,
+        },
+    )
+    .await?;
     Ok(())
 }
 
@@ -354,6 +427,40 @@ pub(crate) async fn request_spin(
             .await?;
         table.spin_requests.insert(current_player_id.to_owned());
     }
+
+    Ok(())
+}
+
+pub(crate) async fn list_players(
+    game: ArcGame,
+    ws_channel_sender: Sender<ResponseMessages>,
+    current_player_id: &PlayerId,
+    current_table_id: &TableId,
+) -> anyhow::Result<()> {
+    let tables = game.tables.lock().await;
+    let table = tables
+        .get(current_table_id)
+        .ok_or(anyhow::anyhow!("Table not found"))?;
+
+    if table.spin_requests.contains(current_player_id) {
+        ws_channel_sender
+            .send(ResponseMessages::Error {
+                msg: "No table has been joined".into(),
+            })
+            .await?;
+        return Ok(());
+    }
+
+    let players = table.players.lock().await;
+
+    let players = players
+        .iter()
+        .map(|(player_id, player)| ws_messages::Player::from_player(player, player_id))
+        .collect();
+
+    let ws_channel_response_message = ws_messages::ResponseMessages::ListPlayers { players };
+
+    ws_channel_sender.send(ws_channel_response_message).await?;
 
     Ok(())
 }

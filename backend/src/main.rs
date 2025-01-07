@@ -23,7 +23,7 @@ pub(crate) type ArcGame = Arc<structs::Game>;
 
 #[get("/game_ws")]
 async fn game_ws<'a>(ws: ws::WebSocket, tables: &State<ArcGame>) -> ws::Channel<'static> {
-    let tables: ArcGame = tables.inner().clone();
+    let game: ArcGame = tables.inner().clone();
 
     ws.channel(move |mut stream| {
         Box::pin(async move {
@@ -36,9 +36,18 @@ async fn game_ws<'a>(ws: ws::WebSocket, tables: &State<ArcGame>) -> ws::Channel<
                         match message {
                             Ok(message) => {
                                 match message {
-                                    Message::Close(_) => { break;}
+                                    Message::Close(_) => { 
+                                        match ws_messages_handler::handle_close(game.clone(), &current_player_id, &current_table_id).await {
+                                            Ok(()) => {},
+                                            Err(e) => {
+                                                log::error!("{:?}", e);
+                                                continue;
+                                            }
+                                        }
+                                        break;
+                                    }
                                     _ => {
-                                        match ws_messages_handler::handle(message, tables.clone(), ws_channel_sender.clone(), &mut current_player_id, &mut current_table_id).await {
+                                        match ws_messages_handler::handle(message, game.clone(), ws_channel_sender.clone(), &mut current_player_id, &mut current_table_id).await {
                                             Ok(()) => {},
                                             Err(e) => {
                                                 log::error!("{:?}", e);
