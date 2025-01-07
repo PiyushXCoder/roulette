@@ -5,6 +5,7 @@ import { Board } from "./entities/board.ts";
 import { Chip } from "./entities/chip.ts";
 import { Wallet } from "./entities/wallet.ts";
 import { Wheel } from "./entities/wheel.ts";
+import { StatusMessage } from "./entities/status_message.ts";
 
 function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenContext: ScreenContext) {
   context.fillStyle = colors.BOARD;
@@ -17,6 +18,7 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
   const chipHundered = Chip.instance(100);
   const chipFiveHundered = Chip.instance(500);
   const wallet = Wallet.instance();
+  const statusMessage = StatusMessage.instance();
 
   if (wheel.hidden) board.checkSensors(screenContext);
   board.draw(deltaSeconds, context, screenContext);
@@ -45,6 +47,8 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
 
   wheel.checkSensors(screenContext);
   wheel.draw(deltaSeconds, context, screenContext);
+
+  statusMessage.draw(deltaSeconds, context, screenContext);
 }
 
 export { GameScreen };
