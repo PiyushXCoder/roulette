@@ -94,13 +94,13 @@ pub(crate) async fn handle(
                     .await?;
                 return Ok(());
             }
-            let current_table_id_ref = current_table_id.as_ref().unwrap();
-            let curent_player_id_ref = current_player_id.as_ref().unwrap();
+            let current_table_id = current_table_id.as_ref().unwrap();
+            let curent_player_id = current_player_id.as_ref().unwrap();
             get_status(
                 game,
                 ws_channel_sender,
-                &curent_player_id_ref,
-                &current_table_id_ref,
+                &curent_player_id,
+                &current_table_id,
             )
             .await?;
         }
@@ -118,13 +118,13 @@ pub(crate) async fn handle(
                     .await?;
                 return Ok(());
             }
-            let current_table_id_ref = current_table_id.as_ref().unwrap();
-            let curent_player_id_ref = current_player_id.as_ref().unwrap();
+            let current_table_id = current_table_id.as_ref().unwrap();
+            let curent_player_id = current_player_id.as_ref().unwrap();
             add_bet(
                 game,
                 ws_channel_sender,
-                curent_player_id_ref,
-                current_table_id_ref,
+                curent_player_id,
+                current_table_id,
                 &label,
                 placement,
                 local_position,
@@ -141,13 +141,13 @@ pub(crate) async fn handle(
                     .await?;
                 return Ok(());
             }
-            let current_table_id_ref = current_table_id.as_ref().unwrap();
-            let curent_player_id_ref = current_player_id.as_ref().unwrap();
+            let current_table_id = current_table_id.as_ref().unwrap();
+            let curent_player_id = current_player_id.as_ref().unwrap();
             clear_bets(
                 game,
                 ws_channel_sender,
-                &curent_player_id_ref,
-                &current_table_id_ref,
+                &curent_player_id,
+                &current_table_id,
             )
             .await?;
         }
@@ -160,13 +160,13 @@ pub(crate) async fn handle(
                     .await?;
                 return Ok(());
             }
-            let current_table_id_ref = current_table_id.as_ref().unwrap();
-            let curent_player_id_ref = current_player_id.as_ref().unwrap();
+            let current_table_id = current_table_id.as_ref().unwrap();
+            let curent_player_id = current_player_id.as_ref().unwrap();
             request_spin(
                 game,
                 ws_channel_sender,
-                &curent_player_id_ref,
-                &current_table_id_ref,
+                &curent_player_id,
+                &current_table_id,
             )
             .await?;
         }
@@ -179,13 +179,13 @@ pub(crate) async fn handle(
                     .await?;
                 return Ok(());
             }
-            let current_table_id_ref = current_table_id.as_ref().unwrap();
-            let curent_player_id_ref = current_player_id.as_ref().unwrap();
+            let current_table_id = current_table_id.as_ref().unwrap();
+            let curent_player_id = current_player_id.as_ref().unwrap();
             list_players(
                 game,
                 ws_channel_sender,
-                &curent_player_id_ref,
-                &current_table_id_ref,
+                &curent_player_id,
+                &current_table_id,
             )
             .await?;
         }
