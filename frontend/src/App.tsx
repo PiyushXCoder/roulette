@@ -6,7 +6,7 @@ import { Chip } from "./entities/chip.ts";
 import { Wallet } from "./entities/wallet.ts";
 import { Wheel } from "./entities/wheel.ts";
 import { StatusMessage } from "./entities/status_message.ts";
-import { SpinButton } from "./entities/spin_button.ts";
+import { Button } from "./entities/button.ts";
 
 function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenContext: ScreenContext) {
   context.fillStyle = colors.BOARD;
@@ -20,7 +20,7 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
   const chipFiveHundered = Chip.instance(500);
   const wallet = Wallet.instance();
   const statusMessage = StatusMessage.instance();
-  const spinButton = SpinButton.instance();
+  const spinButton = Button.instance("spin_button");
 
   if (wheel.hidden) board.checkSensors(screenContext);
   board.draw(deltaSeconds, context, screenContext);
@@ -52,7 +52,12 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
 
   statusMessage.draw(deltaSeconds, context, screenContext);
 
-  spinButton.draw(deltaSeconds, context, screenContext);
+  spinButton?.setLabel("Spin!");
+  spinButton?.setPosition((screenContext.screen.width - spinButton.width) / 2, screenContext.screen.height - 100);
+  spinButton?.setEventListener(() => { console.log("Clicked!") });
+  spinButton?.checkSensors(screenContext);
+  spinButton?.draw(deltaSeconds, context, screenContext);
+
 }
 
 export { GameScreen };
