@@ -33,9 +33,8 @@ const RIGHT = "right";
 const TOP = "top";
 const BOTTOM = "bottom";
 const CENTER = "center";
-interface CollisionResult {
-  label: string
-  placement: typeof TOP_LEFT |
+
+type Placement = typeof TOP_LEFT |
   typeof TOP_RIGHT |
   typeof BOTTOM_LEFT |
   typeof BOTTOM_RIGHT |
@@ -43,7 +42,11 @@ interface CollisionResult {
   typeof RIGHT |
   typeof TOP |
   typeof BOTTOM |
-  typeof CENTER,
+  typeof CENTER;
+
+interface CollisionResult {
+  label: string
+  placement: Placement,
   localPosition: { x: number, y: number }
 }
 
@@ -322,6 +325,6 @@ function isCollieded(x: number, y: number, width: number, height: number, screen
   return (x <= mouseX && x + width > mouseX && y <= mouseY && y + height > mouseY)
 }
 export {
-  Board, type CollisionResult, BOX_COLOR_MAP
+  Board, type CollisionResult, BOX_COLOR_MAP, type Placement
 };
 
