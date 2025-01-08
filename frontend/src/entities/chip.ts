@@ -66,7 +66,7 @@ class Chip implements Drawable, Sensible {
       this.drawChip(context, localShiftX, localShiftY, true);
     }
 
-    // Draw bids
+    // Draw bets
     for (let bet of this.bets) {
       localShiftX = bet.drawPosition.x - CHIP_RADIUS + LINE_WIDTH / 2, localShiftY = bet.drawPosition.y - CHIP_RADIUS + LINE_WIDTH / 2;
       this.drawChip(context, localShiftX, localShiftY);
@@ -115,7 +115,7 @@ class Chip implements Drawable, Sensible {
     }
   }
 
-  addBid(collision: CollisionResult, drawPosition: [number, number]) {
+  addBet(collision: CollisionResult, drawPosition: [number, number]) {
     const [x, y] = drawPosition;
     this.bets.push({
       collision: collision, drawPosition: { x, y }
@@ -123,4 +123,4 @@ class Chip implements Drawable, Sensible {
   }
 }
 
-export { Chip, type Bet as Bid };
+export { Chip, type Bet };

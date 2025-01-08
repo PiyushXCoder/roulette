@@ -129,7 +129,7 @@ class Board implements Drawable, Sensible {
       else if (collision.placement == RIGHT) x = x + width, y = y + height / 2;
       else if (collision.placement == BOTTOM) x = x + width / 2, y = y + height;
       else if (collision.placement == CENTER) x = x + width / 2, y = y + height / 2;
-      Chip.getDraggedInstance()?.addBid(collision, [x, y]);
+      Chip.getDraggedInstance()?.addBet(collision, [x, y]);
     }
 
     const affected = this.getAffedtedByCollision(collision);
