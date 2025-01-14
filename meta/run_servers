@@ -1,0 +1,24 @@
+#!/bin/env bash
+
+export project=$(realpath $(printf $(dirname $(realpath $0))'/..'))
+
+backend_server() {
+  cd $project/backend
+  zellij run -- cargo watch -xrun
+}
+
+frontend_server() {
+  cd $project/frontend
+  pnpm i
+  zellij run -- pnpm dev --host 127.0.0.1
+}
+
+reverse_proxy_server() {
+  cd $project/meta/reverse_proxy_server/
+  zellij run -- cargo run --release
+}
+
+
+backend_server 
+frontend_server 
+reverse_proxy_server
