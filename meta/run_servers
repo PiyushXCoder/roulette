@@ -2,15 +2,21 @@
 
 export project=$(realpath $(printf $(dirname $(realpath $0))'/..'))
 
+# Args: message
+panic() {
+  echo $1
+  exit 1
+}
+
 backend_server() {
   cd $project/backend
-  zellij run -- cargo watch -xrun
+  zellij run -- cargo watch -x run 
 }
 
 frontend_server() {
   cd $project/frontend
   pnpm i
-  zellij run -- pnpm dev --host 127.0.0.1
+  zellij run -- pnpm dev --host 127.0.0.1 
 }
 
 reverse_proxy_server() {
@@ -18,7 +24,8 @@ reverse_proxy_server() {
   zellij run -- cargo run --release
 }
 
+zellij --version || panic 'Zellij not found!'
 
-backend_server 
-frontend_server 
-reverse_proxy_server
+backend_server &
+frontend_server &
+reverse_proxy_server 
