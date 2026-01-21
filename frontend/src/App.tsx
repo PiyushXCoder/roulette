@@ -51,19 +51,21 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
 
   wallet.draw(deltaSeconds, context, screenContext);
 
-  wheel.checkSensors(screenContext);
-  wheel.draw(deltaSeconds, context, screenContext);
-
   statusMessage.draw(deltaSeconds, context, screenContext);
 
+  // Draw spin button BEFORE wheel so wheel appears on top
   spinButton?.setLabel("Spin!");
   spinButton?.setPosition((screenContext.screen.width - spinButton.width) / 2, screenContext.screen.height - 100);
   spinButton?.setEventListener(() => {
     console.log("Spin button clicked - requesting spin");
     wsManager.sendRequestSpin();
   });
-  spinButton?.checkSensors(screenContext);
+  if (wheel.hidden) spinButton?.checkSensors(screenContext);
   spinButton?.draw(deltaSeconds, context, screenContext);
+
+  // Wheel is drawn last so it appears on top
+  wheel.checkSensors(screenContext);
+  wheel.draw(deltaSeconds, context, screenContext);
 }
 
 export { GameScreen };
