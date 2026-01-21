@@ -53,19 +53,30 @@ pub(crate) async fn handle(
     current_player_id: &mut Option<PlayerId>,
     current_table_id: &mut Option<TableId>,
 ) -> anyhow::Result<()> {
+    eprintln!("DEBUG handle: parsing message");
     let request_message: RequestMessages = match message {
-        Message::Text(text) => match json::from_str(&text) {
-            Ok(req) => req,
-            Err(e) => {
-                ws_channel_sender
-                    .send(ResponseMessages::Error {
-                        msg: format!("Bad Request: {:?}", e.to_string()).into(),
-                    })
-                    .await?;
-                return Ok(());
+        Message::Text(text) => {
+            eprintln!("DEBUG handle: got text message: {}", text);
+            match json::from_str(&text) {
+                Ok(req) => {
+                    eprintln!("DEBUG handle: parsed successfully: {:?}", req);
+                    req
+                },
+                Err(e) => {
+                    eprintln!("DEBUG handle: parse error: {:?}", e);
+                    ws_channel_sender
+                        .send(ResponseMessages::Error {
+                            msg: format!("Bad Request: {:?}", e.to_string()).into(),
+                        })
+                        .await?;
+                    return Ok(());
+                }
             }
         },
-        _ => return Ok(()),
+        _ => {
+            eprintln!("DEBUG handle: non-text message, ignoring");
+            return Ok(());
+        },
     };
 
     match request_message {
@@ -74,6 +85,7 @@ pub(crate) async fn handle(
             player_id,
             name,
         } => {
+            eprintln!("DEBUG handle: calling join_table");
             join_table(
                 game,
                 ws_channel_sender,
@@ -84,6 +96,7 @@ pub(crate) async fn handle(
                 &name,
             )
             .await?;
+            eprintln!("DEBUG handle: join_table completed");
         }
         RequestMessages::GetStatus => {
             if current_player_id.is_none() || current_table_id.is_none() {
@@ -202,51 +215,67 @@ pub(crate) async fn join_table(
     player_id: Option<Uuid>,
     name: &str,
 ) -> anyhow::Result<()> {
+    eprintln!("DEBUG join_table: starting");
     let player_id = player_id.unwrap_or(Uuid::new_v4());
-    let mut tables = game.tables.lock().await;
-    match tables.get_mut(&table_id) {
-        Some(table) => {
-            let mut players = table.players.lock().await;
-            match players.get_mut(&player_id) {
-                Some(player) => {
-                    player.ws_channel_sender = ws_channel_sender.clone();
-                }
-                None => {
-                    players.insert(
-                        player_id,
-                        Player::new(ws_channel_sender.clone(), name, Vec::new()),
-                    );
+    
+    // Use a scoped block to ensure the tables lock is dropped before we reacquire it
+    {
+        eprintln!("DEBUG join_table: acquiring tables lock");
+        let mut tables = game.tables.lock().await;
+        eprintln!("DEBUG join_table: got tables lock");
+        match tables.get_mut(&table_id) {
+            Some(table) => {
+                eprintln!("DEBUG join_table: table exists, acquiring players lock");
+                let mut players = table.players.lock().await;
+                eprintln!("DEBUG join_table: got players lock");
+                match players.get_mut(&player_id) {
+                    Some(player) => {
+                        player.ws_channel_sender = ws_channel_sender.clone();
+                    }
+                    None => {
+                        players.insert(
+                            player_id,
+                            Player::new(ws_channel_sender.clone(), name, Vec::new()),
+                        );
+                    }
                 }
             }
-        }
-        None => {
-            let last_timestamp = Arc::new(Mutex::new(None));
-            let mut players_hashmap = HashMap::new();
-            players_hashmap.insert(
-                player_id,
-                Player::new(ws_channel_sender.clone(), name, Vec::new()),
-            );
-            let players = Arc::new(Mutex::new(players_hashmap));
+            None => {
+                eprintln!("DEBUG join_table: creating new table");
+                let last_timestamp = Arc::new(Mutex::new(None));
+                let mut players_hashmap = HashMap::new();
+                players_hashmap.insert(
+                    player_id,
+                    Player::new(ws_channel_sender.clone(), name, Vec::new()),
+                );
+                let players = Arc::new(Mutex::new(players_hashmap));
 
-            tables.insert(
-                table_id.clone(),
-                Table::new(
-                    players.clone(),
-                    SpinTimmer::new(
-                        spin_timmer::spawn_spin_timmer(last_timestamp.clone(), players.clone())
-                            .await,
-                        last_timestamp,
+                tables.insert(
+                    table_id.clone(),
+                    Table::new(
+                        players.clone(),
+                        SpinTimmer::new(
+                            spin_timmer::spawn_spin_timmer(last_timestamp.clone(), players.clone())
+                                .await,
+                            last_timestamp,
+                        ),
                     ),
-                ),
-            );
+                );
+            }
         }
-    }
+        eprintln!("DEBUG join_table: releasing tables lock");
+    } // tables lock is released here
+    
+    eprintln!("DEBUG join_table: sending JoinTable response");
     ws_channel_sender
         .send(ResponseMessages::JoinTable { player_id })
         .await?;
+    eprintln!("DEBUG join_table: response sent");
     *current_player_id = Some(player_id);
     *current_table_id = Some(table_id.clone());
 
+    // Now safely reacquire the tables lock
+    eprintln!("DEBUG join_table: reacquiring tables lock for broadcast");
     let tables = game.tables.lock().await;
     let table = tables
         .get(&table_id)
@@ -269,6 +298,7 @@ pub(crate) async fn join_table(
         },
     )
     .await?;
+    eprintln!("DEBUG join_table: completed");
     Ok(())
 }
 

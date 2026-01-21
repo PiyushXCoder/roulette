@@ -2,6 +2,7 @@ import { Drawable, Sensible } from "./traits";
 import { ScreenContext } from "../components/game-screen/game-screen";
 import { colors } from "./colors";
 import { BOX_COLOR_MAP } from "./board";
+import { gameState } from "./game-state";
 
 const DIALOG_WIDTH = 400, DIALOG_HEIGHT = 500;
 const WHEEL_RADIUS = 170;
@@ -13,14 +14,11 @@ const BALL_RADIUS = 7;
 
 class Wheel implements Drawable, Sensible {
   private static _instance: Wheel;
-  betAmount: number = 0
-  holdingAmount: number = 0
   wheelAngularVelocity: number = 1
   wheelAngularAccleration: number = -0.03
   wheelAngularDisplacement: number = 0
   ballAngularDisplacement: number = 0
   ballAngularVelocity: number = -0.3;
-  luckyNumber: number = 11
   hidden: boolean = true;
 
   private constructor() { }
@@ -39,6 +37,14 @@ class Wheel implements Drawable, Sensible {
     context.fillStyle = colors.BLUE;
     context.fillRect(localShiftX, localShiftY, DIALOG_WIDTH, DIALOG_HEIGHT);
 
+    // Display winning information
+    context.fillStyle = colors.WHITE;
+    context.font = "bold 20pt Sans";
+    const luckyNum = gameState.lastLuckyNumber ?? 0;
+    const winAmount = gameState.lastWinningAmount;
+    context.fillText(`Lucky Number: ${luckyNum}`, localShiftX + 20, localShiftY + 40);
+    context.fillText(`Win: ${winAmount}`, localShiftX + 20, localShiftY + 70);
+
     localShiftX = (_screenContext.screen.width) / 2, localShiftY = (_screenContext.screen.height) / 2;
 
     if (this.wheelAngularVelocity > 0) {
@@ -50,14 +56,22 @@ class Wheel implements Drawable, Sensible {
     this.drawWheel(context, localShiftX, localShiftY, this.wheelAngularDisplacement);
 
     const stripAngle = (2 * Math.PI) / NUMBER_OF_OPTIONS;
+    const luckyNumber = gameState.lastLuckyNumber ?? 0;
     if (this.wheelAngularVelocity == 0) {
-      const neededDisplacement = (this.wheelAngularDisplacement + stripAngle * NUMBER_ARRANGEMENT_ON_WHEEL.indexOf(this.luckyNumber)) % (2 * Math.PI)
+      const neededDisplacement = (this.wheelAngularDisplacement + stripAngle * NUMBER_ARRANGEMENT_ON_WHEEL.indexOf(luckyNumber)) % (2 * Math.PI)
       const currentDisplacement = (2 * Math.PI) + (this.ballAngularDisplacement % (2 * Math.PI))
       if (Math.abs(neededDisplacement - currentDisplacement) < 0.1)
         this.ballAngularVelocity = 0;
     }
     this.ballAngularDisplacement += this.ballAngularVelocity * _deltaSeconds;
     this.drawBall(context, localShiftX, localShiftY, this.ballAngularDisplacement);
+  }
+
+  startSpin(): void {
+    this.hidden = false;
+    this.wheelAngularVelocity = 1;
+    this.ballAngularVelocity = -0.3;
+    gameState.isSpinning = true;
   }
 
   checkSensors(screenContext: ScreenContext): void {

@@ -17,6 +17,7 @@ macro_rules! unwrap_or_log_and_continue {
         match $result {
             Ok(m)=> { m },
             Err(e) => {
+                eprintln!("ERROR: {:?}", e);
                 log::error!("{:?}", e);
                 continue;
             }
@@ -33,9 +34,11 @@ pub(crate) async fn game_ws<'a>(ws: ws::WebSocket, tables: &State<ArcGame>) -> w
             let mut current_player_id: Option<structs::PlayerId> = None;
             let mut current_table_id: Option<structs::TableId> = None;
             let (ws_channel_sender, mut ws_channel_receiver) = mpsc::channel::<ws_messages::ResponseMessages>(10);
+            eprintln!("DEBUG: New WebSocket connection established");
             loop {
                 select! {
                     Some(message) = stream.next() => {
+                        eprintln!("DEBUG: Received message: {:?}", message);
                         match message {
                             Ok(message) => {
                                 match message {
@@ -45,23 +48,28 @@ pub(crate) async fn game_ws<'a>(ws: ws::WebSocket, tables: &State<ArcGame>) -> w
                                         break;
                                     }
                                     _ => {
+                                        eprintln!("DEBUG: Calling handler...");
                                         unwrap_or_log_and_continue!(
                                             ws_messages_handler::handle(message, game.clone(), ws_channel_sender.clone(), &mut current_player_id, &mut current_table_id).await);
+                                        eprintln!("DEBUG: Handler returned successfully");
                                     }
                                 };
                             },
                             Err(e) => {
+                                eprintln!("ERROR: WebSocket error: {:?}", e);
                                 log::error!("{:?}", e);
                                 break;
                             }
                         }
                     },
                     Some(message) = ws_channel_receiver.recv() => {
+                        eprintln!("DEBUG: Sending message: {:?}", message);
                         let message_as_json = unwrap_or_log_and_continue!(json::to_string(&message)); 
                         unwrap_or_log_and_continue!(stream.send(Message::Text(message_as_json)).await);
                     }
                 }
             }
+            eprintln!("DEBUG: WebSocket loop exited");
             Ok(())
         })
     })

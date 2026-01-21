@@ -1,14 +1,13 @@
 import { Drawable } from "./traits";
 import { ScreenContext } from "../components/game-screen/game-screen";
 import { colors } from "./colors";
+import { gameState } from "./game-state";
 
 const FONT_HEIGHT = 18;
 const LINE_SPACING = 45;
 
 class Wallet implements Drawable {
   private static _instance: Wallet;
-  betAmount: number = 0
-  holdingAmount: number = 0
 
   private constructor() { }
 
@@ -22,7 +21,7 @@ class Wallet implements Drawable {
 
   draw(_deltaSeconds: number, context: CanvasRenderingContext2D, _screenContext: ScreenContext) {
     const localShiftX = _screenContext.screen.width - 300, localShiftY = _screenContext.screen.height - 100;
-    let label = "Bet: ₹" + this.betAmount + "\nHolding: ₹" + this.holdingAmount;
+    let label = "Bet: ₹" + gameState.totalBetAmount + "\nHolding: ₹" + gameState.balance;
     context.font = "bold " + FONT_HEIGHT + "pt Sans";
     context.fillStyle = colors.WHITE;
     label.split("\n").forEach((line, index) => {

@@ -2,6 +2,9 @@ import { Drawable, Sensible } from "./traits";
 import { ScreenContext } from "../components/game-screen/game-screen";
 import { colors } from "./colors";
 import { CollisionResult } from "./board";
+import { wsManager } from "../websocket";
+import { gameState } from "./game-state";
+import type { Placement } from "../types/messages";
 
 const SHADOW_SHIFT = 3;
 const LINE_WIDTH = 10;
@@ -13,21 +16,13 @@ const ADD_BUTTON_SPACING = 70;
 
 type ChipValue = number;
 
-
-interface Bet {
-  drawPosition: {
-    x: number,
-    y: number,
-  }
-  collision: CollisionResult
-}
-
 class Chip implements Drawable, Sensible {
   color: string = colors.YELLOW;
   value: number = 0
   addButtonPosition: number = 0
   isDragged: boolean = false
-  bets: Bet[] = []
+  // Stores visual positions for bets (keyed by label+placement for quick lookup)
+  betVisualPositions: Map<string, { x: number, y: number }> = new Map();
 
   private static _instances: Map<ChipValue, Chip> = new Map();
   private static _draggedInstance: Chip | null = null;
@@ -66,10 +61,17 @@ class Chip implements Drawable, Sensible {
       this.drawChip(context, localShiftX, localShiftY, true);
     }
 
-    // Draw bets
-    for (let bet of this.bets) {
-      localShiftX = bet.drawPosition.x - CHIP_RADIUS + LINE_WIDTH / 2, localShiftY = bet.drawPosition.y - CHIP_RADIUS + LINE_WIDTH / 2;
-      this.drawChip(context, localShiftX, localShiftY);
+    // Draw bets from server state
+    for (const bet of gameState.bets) {
+      if (bet.amount === this.value) {
+        const key = `${bet.label}-${bet.placement}`;
+        const pos = this.betVisualPositions.get(key);
+        if (pos) {
+          localShiftX = pos.x - CHIP_RADIUS + LINE_WIDTH / 2;
+          localShiftY = pos.y - CHIP_RADIUS + LINE_WIDTH / 2;
+          this.drawChip(context, localShiftX, localShiftY);
+        }
+      }
     }
   }
 
@@ -117,10 +119,27 @@ class Chip implements Drawable, Sensible {
 
   addBet(collision: CollisionResult, drawPosition: [number, number]) {
     const [x, y] = drawPosition;
-    this.bets.push({
-      collision: collision, drawPosition: { x, y }
-    })
+
+    // Store visual position
+    const key = `${collision.label}-${collision.placement}`;
+    this.betVisualPositions.set(key, { x, y });
+
+    // Send to server
+    wsManager.sendAddBet(
+      collision.label,
+      collision.placement as Placement,
+      [collision.localPosition.x, collision.localPosition.y],
+      this.value
+    );
+  }
+
+  clearBets() {
+    this.betVisualPositions.clear();
+  }
+
+  static clearAllBets() {
+    Chip._instances.forEach(chip => chip?.clearBets());
   }
 }
 
-export { Chip, type Bet };
+export { Chip };

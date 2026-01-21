@@ -1,6 +1,7 @@
 import { Drawable, Sensible } from "./traits";
 import { ScreenContext } from "../components/game-screen/game-screen";
 import { colors } from "./colors";
+import { gameState } from "./game-state";
 
 const FONT_HEIGHT = 18;
 const BUTTON_PADDING_X = 30;
@@ -30,12 +31,28 @@ class Button implements Drawable, Sensible {
   }
 
   draw(_deltaSeconds: number, context: CanvasRenderingContext2D, _screenContext: ScreenContext) {
-    let label = "Spin";
+    // Check game state for button state
+    const timeRemaining = gameState.getSpinTimeRemaining();
+    const isDisabled = gameState.spinRequested || gameState.isSpinning || gameState.bets.length === 0;
+
+    let label = timeRemaining > 0
+      ? `Spinning in ${timeRemaining}s`
+      : gameState.isSpinning
+        ? "Spinning..."
+        : this.label || "Spin";
+
     context.font = "bold " + FONT_HEIGHT + "pt Sans";
     let labelWidth = context.measureText(label).width;
     const localShiftX = this.x, localShiftY = this.y;
     this.width = labelWidth + 2 * BUTTON_PADDING_X, this.height = FONT_HEIGHT + 2 * BUTTON_PADDING_Y
-    context.fillStyle = colors.RED;
+
+    // Set button color based on state
+    if (isDisabled) {
+      context.fillStyle = colors.BLACK; // Disabled
+    } else {
+      context.fillStyle = colors.RED; // Active
+    }
+
     context.fillRect(localShiftX, localShiftY - FONT_HEIGHT, this.width, this.height);
     context.fillStyle = colors.WHITE;
     context.fillText(label, localShiftX + BUTTON_PADDING_X, localShiftY + BUTTON_PADDING_Y);
@@ -47,6 +64,11 @@ class Button implements Drawable, Sensible {
 
   checkSensors(screenContext: ScreenContext): void {
     if (this.is_being_clicked) return;
+
+    // Check if button is disabled
+    const isDisabled = gameState.spinRequested || gameState.isSpinning || gameState.bets.length === 0;
+    if (isDisabled) return; // Don't respond to clicks when disabled
+
     const localShiftX = this.x, localShiftY = this.y;
     const width = this.width, height = this.height;
     if (screenContext.events.mouse.down) {
