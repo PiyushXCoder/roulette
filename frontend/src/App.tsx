@@ -53,9 +53,23 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
 
   statusMessage.draw(deltaSeconds, context, screenContext);
 
+  // Create clear bets button
+  const clearButton = Button.instance("clear_button");
+  const spinButtonWidth = spinButton?.width ?? 100;
+  clearButton?.setLabel("Clear Bets");
+  clearButton?.setPosition((screenContext.screen.width / 2) - spinButtonWidth - 20, screenContext.screen.height - 100);
+  clearButton?.setEventListener(() => {
+    console.log("Clear bets button clicked");
+    wsManager.sendClearBets();
+    Chip.clearAllBets();
+    gameState.clearBets();
+  });
+  if (wheel.hidden) clearButton?.checkSensors(screenContext);
+  clearButton?.draw(deltaSeconds, context, screenContext);
+
   // Draw spin button BEFORE wheel so wheel appears on top
   spinButton?.setLabel("Spin!");
-  spinButton?.setPosition((screenContext.screen.width - spinButton.width) / 2, screenContext.screen.height - 100);
+  spinButton?.setPosition((screenContext.screen.width / 2) + 20, screenContext.screen.height - 100);
   spinButton?.setEventListener(() => {
     console.log("Spin button clicked - requesting spin");
     wsManager.sendRequestSpin();
