@@ -6,3 +6,11 @@ This an attempt to make a online Roulette.
 Project is not yet released! 
 You can still try parts of it and help in implementation. 
 
+![Demo](docs/demo.gif)
+
+## How to run
+
+The script does use zellij. I may add other ways such as docker later. 
+```bash
+./meta/run_servers
+```
