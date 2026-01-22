@@ -3,6 +3,7 @@ ARG TARGETARCH
 FROM rust:bookworm AS chef
 ARG TARGETARCH
 ENV TARGETARCH=${TARGETARCH}
+ENV RUSTC_WRAPPER=""
 WORKDIR /app
 RUN apt-get update && apt-get install -y mold curl tar && rm -rf /var/lib/apt/lists/*
 RUN echo "TARGETARCH is: ${TARGETARCH}"
@@ -29,12 +30,12 @@ COPY . .
 RUN cargo build --release
 
 # Runtime stage
-FROM alpine:3.20
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
 # Install runtime dependencies
-RUN apk add --no-cache ca-certificates
+RUN apt-get update && apt-get install -y libssl-dev ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy binary from builder
 COPY --from=builder /app/target/release/backend ./backend
