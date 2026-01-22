@@ -9,6 +9,11 @@ class WebSocketManager {
     private reconnectTimer: number | null = null;
     private shouldReconnect: boolean = true;
 
+    constructor() {
+        // Restore playerId from sessionStorage if available
+        this.playerId = sessionStorage.getItem('roulette_player_id');
+    }
+
     connect(url: string, tableId: string, playerName: string): Promise<string> {
         return new Promise((resolve, reject) => {
             try {
@@ -16,7 +21,7 @@ class WebSocketManager {
 
                 this.ws.onopen = () => {
                     console.log("WebSocket connected");
-                    // Send JoinTable request
+                    // Send JoinTable request with existing playerId if available
                     this.send({
                         JoinTable: {
                             table_id: tableId,
@@ -29,6 +34,8 @@ class WebSocketManager {
                     const joinHandler = (message: ResponseMessage) => {
                         if (typeof message === "object" && "JoinTable" in message) {
                             this.playerId = message.JoinTable.player_id;
+                            // Store playerId in sessionStorage for reconnection
+                            sessionStorage.setItem('roulette_player_id', this.playerId);
                             console.log("Joined table with player_id:", this.playerId);
                             resolve(this.playerId);
                         }
