@@ -6,15 +6,11 @@ ENV TARGETARCH=${TARGETARCH}
 WORKDIR /app
 RUN apt-get update && apt-get install -y mold curl tar && rm -rf /var/lib/apt/lists/*
 RUN echo "TARGETARCH is: ${TARGETARCH}"
-# Install cargo-binstall and sccache
+# Install cargo-binstall
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
-    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin && \
-    curl -L https://github.com/mozilla/sccache/releases/download/v0.10.0/sccache-v0.10.0-aarch64-unknown-linux-musl.tar.gz | tar xz -C /tmp && \
-    mv /tmp/sccache-v0.10.0-aarch64-unknown-linux-musl/sccache /usr/local/bin/; \
+    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin; \
     elif [ "${TARGETARCH}" = "amd64" ]; then \
-    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin && \
-    curl -L https://github.com/mozilla/sccache/releases/download/v0.10.0/sccache-v0.10.0-x86_64-unknown-linux-musl.tar.gz | tar xz -C /tmp && \
-    mv /tmp/sccache-v0.10.0-x86_64-unknown-linux-musl/sccache /usr/local/bin/; \
+    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin; \
     else \
     echo "Unsupported TARGETARCH: ${TARGETARCH}"; exit 1; \
     fi
@@ -31,35 +27,17 @@ ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 
 COPY --from=planner /app/recipe.json recipe.json
 
-# Build dependencies with cargo-chef (uses local sccache cache)
-RUN --mount=type=cache,target=/root/.cache/sccache \
-    --mount=type=cache,target=/root/.cargo/registry \
+# Build dependencies with cargo-chef
+RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
-    --mount=type=secret,id=ACTIONS_CACHE_URL \
-    --mount=type=secret,id=ACTIONS_RUNTIME_TOKEN \
-    export ACTIONS_CACHE_URL=$(cat /run/secrets/ACTIONS_CACHE_URL 2>/dev/null || echo "") && \
-    export ACTIONS_RUNTIME_TOKEN=$(cat /run/secrets/ACTIONS_RUNTIME_TOKEN 2>/dev/null || echo "") && \
-    if [ -n "$ACTIONS_CACHE_URL" ]; then \
-        export SCCACHE_GHA_ENABLED=on RUSTC_WRAPPER=sccache; \
-    fi && \
-    cargo chef cook --release --recipe-path recipe.json && \
-    (sccache --show-stats 2>/dev/null || true)
+    cargo chef cook --release --recipe-path recipe.json
 
 COPY . .
 
 # Build the application
-RUN --mount=type=cache,target=/root/.cache/sccache \
-    --mount=type=cache,target=/root/.cargo/registry \
+RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
-    --mount=type=secret,id=ACTIONS_CACHE_URL \
-    --mount=type=secret,id=ACTIONS_RUNTIME_TOKEN \
-    export ACTIONS_CACHE_URL=$(cat /run/secrets/ACTIONS_CACHE_URL 2>/dev/null || echo "") && \
-    export ACTIONS_RUNTIME_TOKEN=$(cat /run/secrets/ACTIONS_RUNTIME_TOKEN 2>/dev/null || echo "") && \
-    if [ -n "$ACTIONS_CACHE_URL" ]; then \
-        export SCCACHE_GHA_ENABLED=on RUSTC_WRAPPER=sccache; \
-    fi && \
-    cargo build --release && \
-    (sccache --show-stats 2>/dev/null || true)
+    cargo build --release
 
 # Runtime stage
 FROM debian:bookworm-slim
