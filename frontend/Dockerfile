@@ -15,14 +15,6 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build arguments for Vite environment variables
-ARG VITE_WS_URL=ws://localhost:8080/api/game_ws
-ARG VITE_DEFAULT_TABLE=main-table
-
-# Set environment variables for build
-ENV VITE_WS_URL=$VITE_WS_URL
-ENV VITE_DEFAULT_TABLE=$VITE_DEFAULT_TABLE
-
 # Build the application
 RUN pnpm build
 
