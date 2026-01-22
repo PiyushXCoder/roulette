@@ -117,7 +117,8 @@ function App() {
     // Get or prompt for table ID (use sessionStorage to avoid double prompt in StrictMode)
     let tableId = sessionStorage.getItem('roulette_table_id');
     if (!tableId) {
-      tableId = prompt("Enter table ID:") || 'main-table';
+      tableId = prompt("Enter table ID:") || `Table_${Math.floor(Math.random() * 1000)}`;
+
       sessionStorage.setItem('roulette_table_id', tableId);
     }
 
