@@ -6,13 +6,11 @@ ENV TARGETARCH=${TARGETARCH}
 WORKDIR /app
 RUN apt-get update && apt-get install -y mold curl tar && rm -rf /var/lib/apt/lists/*
 RUN echo "TARGETARCH is: ${TARGETARCH}"
-# Install cargo-binstall and sccache
+# Install cargo-binstall
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
-    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin && \
-    curl -L https://github.com/mozilla/sccache/releases/download/v0.10.0/sccache-v0.10.0-aarch64-unknown-linux-musl.tar.gz | tar xz --strip-components=1 -C /usr/local/bin; \
+    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin; \
     elif [ "${TARGETARCH}" = "amd64" ]; then \
-    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin && \
-    curl -L https://github.com/mozilla/sccache/releases/download/v0.10.0/sccache-v0.10.0-x86_64-unknown-linux-musl.tar.gz | tar xz --strip-components=1 -C /usr/local/bin; \
+    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin; \
     else \
     echo "Unsupported TARGETARCH: ${TARGETARCH}"; exit 1; \
     fi
@@ -24,28 +22,22 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 
-# Use mold linker for faster linking and sccache for compilation caching
+# Use mold linker for faster linking
 ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
-ENV RUSTC_WRAPPER=sccache
-ENV SCCACHE_DIR=/sccache
 
 COPY --from=planner /app/recipe.json recipe.json
 
-# Build dependencies with cargo-chef + sccache
-RUN --mount=type=cache,target=/sccache \
-    --mount=type=cache,target=/root/.cargo/registry \
+# Build dependencies with cargo-chef
+RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
-    cargo chef cook --release --recipe-path recipe.json && \
-    sccache --show-stats
+    cargo chef cook --release --recipe-path recipe.json
 
 COPY . .
 
-# Build the application with sccache
-RUN --mount=type=cache,target=/sccache \
-    --mount=type=cache,target=/root/.cargo/registry \
+# Build the application
+RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
-    cargo build --release && \
-    sccache --show-stats
+    cargo build --release
 
 # Runtime stage
 FROM debian:bookworm-slim
