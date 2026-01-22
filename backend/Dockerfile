@@ -13,20 +13,35 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
     else \
     echo "Unsupported TARGETARCH: ${TARGETARCH}"; exit 1; \
     fi
-RUN cargo binstall cargo-chef --no-confirm
+RUN cargo binstall cargo-chef sccache --no-confirm
 
 FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
+
+# sccache environment variables (passed from GitHub Actions)
+ARG ACTIONS_CACHE_URL
+ARG ACTIONS_RUNTIME_TOKEN
+ENV SCCACHE_GHA_ENABLED=on
+ENV ACTIONS_CACHE_URL=${ACTIONS_CACHE_URL}
+ENV ACTIONS_RUNTIME_TOKEN=${ACTIONS_RUNTIME_TOKEN}
+ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+
 COPY --from=planner /app/recipe.json recipe.json
 
-
-RUN cargo chef cook --release --recipe-path recipe.json
+# Build dependencies with cargo-chef (cached by sccache)
+RUN --mount=type=cache,target=/root/.cache/sccache \
+    cargo chef cook --release --recipe-path recipe.json && \
+    sccache --show-stats
 
 COPY . .
-RUN cargo build --release
+
+# Build the application (also cached by sccache)
+RUN --mount=type=cache,target=/root/.cache/sccache \
+    cargo build --release && \
+    sccache --show-stats
 
 # Runtime stage
 FROM debian:bookworm-slim
