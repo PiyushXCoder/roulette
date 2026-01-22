@@ -1,6 +1,7 @@
 # Build stage
 ARG TARGETARCH
 FROM rust:bookworm AS chef
+ENV TARGETARCH=${TARGETARCH}
 WORKDIR /app
 RUN apt-get update && apt-get install -y mold curl tar && rm -rf /var/lib/apt/lists/*
 RUN echo "TARGETARCH is: ${TARGETARCH}"
