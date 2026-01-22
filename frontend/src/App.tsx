@@ -94,7 +94,13 @@ function App() {
 
     // Get WebSocket URL from environment or use default
     const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/api/game_ws';
-    const tableId = import.meta.env.VITE_DEFAULT_TABLE || 'main-table';
+
+    // Get or prompt for table ID (use sessionStorage to avoid double prompt in StrictMode)
+    let tableId = sessionStorage.getItem('roulette_table_id');
+    if (!tableId) {
+      tableId = prompt("Enter table ID:") || 'main-table';
+      sessionStorage.setItem('roulette_table_id', tableId);
+    }
 
     // Get or prompt for player name (use sessionStorage to avoid double prompt in StrictMode)
     let playerName = sessionStorage.getItem('roulette_player_name');
