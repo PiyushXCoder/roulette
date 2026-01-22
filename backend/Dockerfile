@@ -1,8 +1,9 @@
 # Build stage
 FROM rust:bookworm AS chef
 WORKDIR /app
-RUN apt-get update && apt-get install -y mold && rm -rf /var/lib/apt/lists/*
-RUN cargo install cargo-chef sccache
+RUN apt-get update && apt-get install -y mold curl tar && rm -rf /var/lib/apt/lists/*
+RUN curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin
+RUN cargo binstall cargo-chef sccache --no-confirm
 
 FROM chef AS planner
 COPY . .
