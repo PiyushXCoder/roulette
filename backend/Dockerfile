@@ -2,7 +2,7 @@
 FROM rust:bookworm AS chef
 WORKDIR /app
 RUN apt-get update && apt-get install -y mold && rm -rf /var/lib/apt/lists/*
-RUN cargo install cargo-chef sccache
+RUN cargo install cargo-binstall && cargo binstall cargo-chef sccache --no-confirm
 
 FROM chef AS planner
 COPY . .
