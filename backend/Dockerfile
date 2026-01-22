@@ -1,28 +1,21 @@
 # Build stage
-FROM rust:1.83-alpine AS builder
-
+FROM rust:1.75-slim AS chef
 WORKDIR /app
+RUN apt-get update && apt-get install -y mold && rm -rf /var/lib/apt/lists/*
+RUN cargo install cargo-chef sccache
 
-# Install build dependencies
-RUN apk add --no-cache musl-dev
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
 
-# Copy manifests
-COPY Cargo.toml Cargo.lock ./
+FROM chef AS builder
+COPY --from=planner /app/recipe.json recipe.json
+ENV RUSTC_WRAPPER="sccache"
+ENV SCCACHE_GHA_ENABLED="true"
+RUN cargo chef cook --release --recipe-path recipe.json
 
-# Create dummy source file to cache dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-
-# Build dependencies (this layer will be cached)
+COPY . .
 RUN cargo build --release
-
-# Remove dummy source
-RUN rm -rf src
-
-# Copy actual source code
-COPY src ./src
-
-# Build the application
-RUN touch src/main.rs && cargo build --release
 
 # Runtime stage
 FROM alpine:3.20
