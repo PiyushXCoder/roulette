@@ -28,11 +28,15 @@ ENV SCCACHE_GHA_ENABLED=on
 ENV ACTIONS_CACHE_URL=${ACTIONS_CACHE_URL}
 ENV ACTIONS_RUNTIME_TOKEN=${ACTIONS_RUNTIME_TOKEN}
 ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+# Use mold linker for faster linking
+ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 
 COPY --from=planner /app/recipe.json recipe.json
 
 # Build dependencies with cargo-chef (cached by sccache)
 RUN --mount=type=cache,target=/root/.cache/sccache \
+    --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
     cargo chef cook --release --recipe-path recipe.json && \
     sccache --show-stats
 
@@ -40,6 +44,8 @@ COPY . .
 
 # Build the application (also cached by sccache)
 RUN --mount=type=cache,target=/root/.cache/sccache \
+    --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
     cargo build --release && \
     sccache --show-stats
 
