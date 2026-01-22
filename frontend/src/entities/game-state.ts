@@ -14,6 +14,7 @@ class GameState {
     spinTimerStart: number | null = null;
     lastLuckyNumber: number | null = null;
     lastWinningAmount: number = 0;
+    private pendingBalance: number | null = null;
 
     private constructor() { }
 
@@ -45,7 +46,8 @@ class GameState {
     handleSpin(spinResult: SpinResponse): void {
         this.lastLuckyNumber = spinResult.Spin.lucky_number;
         this.lastWinningAmount = spinResult.Spin.winning_amount;
-        this.balance = spinResult.Spin.balance;
+        // Store pending balance - will be applied when wheel stops
+        this.pendingBalance = spinResult.Spin.balance;
         this.isSpinning = true;
         this.spinRequested = false;
         this.spinTimerStart = null;
@@ -54,6 +56,15 @@ class GameState {
             this.bets = [];
             this.totalBetAmount = 0;
         }
+    }
+
+    // Called when wheel animation completes
+    onWheelStopped(): void {
+        if (this.pendingBalance !== null) {
+            this.balance = this.pendingBalance;
+            this.pendingBalance = null;
+        }
+        this.isSpinning = false;
     }
 
     beginSpinTimer(timestamp: number): void {

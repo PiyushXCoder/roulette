@@ -143,7 +143,7 @@ class Wheel implements Drawable, Sensible {
       this.wheelAngle = this.targetAngle;
       this.isAnimating = false;
       this.isStopped = true;
-      gameState.isSpinning = false;
+      gameState.onWheelStopped();
     }
   }
 
