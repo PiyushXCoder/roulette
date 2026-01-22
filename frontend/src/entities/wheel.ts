@@ -33,7 +33,6 @@ class Wheel implements Drawable, Sensible {
   private wheelAngle: number = 0;
 
   // Ball segment
-  private ballSegmentIndex: number = 0;
 
   // Animation state
   hidden: boolean = true;
@@ -168,8 +167,6 @@ class Wheel implements Drawable, Sensible {
     const luckyIndex = NUMBER_ARRANGEMENT_ON_WHEEL.indexOf(luckyNumber);
     const stripAngle = (2 * Math.PI) / NUMBER_OF_OPTIONS;
 
-    // Ball will be on the lucky segment
-    this.ballSegmentIndex = luckyIndex;
 
     // Target: lucky segment at top (-PI/2)
     const segmentCenter = luckyIndex * stripAngle + stripAngle / 2;

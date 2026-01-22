@@ -27,7 +27,7 @@ class WebSocketManager {
 
                     // Set up one-time listener for JoinTable response
                     const joinHandler = (message: ResponseMessage) => {
-                        if ("JoinTable" in message) {
+                        if (typeof message === "object" && "JoinTable" in message) {
                             this.playerId = message.JoinTable.player_id;
                             console.log("Joined table with player_id:", this.playerId);
                             resolve(this.playerId);

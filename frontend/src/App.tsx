@@ -130,13 +130,18 @@ function App() {
 
     // Set up message handlers
     const handleMessage = (message: ResponseMessage) => {
+      // Handle string literal response
+      if (message === "ClearBets") {
+        gameState.clearBets();
+        Chip.clearAllBets();
+        return;
+      }
+
+      // Handle object responses
       if ("Status" in message) {
         gameState.updateFromStatus(message.Status.status);
       } else if ("AddBet" in message) {
         gameState.addBet(message);
-      } else if ("ClearBets" in message) {
-        gameState.clearBets();
-        Chip.clearAllBets();
       } else if ("Spin" in message) {
         gameState.handleSpin(message);
         Wheel.instance().startSpin();
