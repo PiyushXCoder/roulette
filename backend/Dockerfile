@@ -6,14 +6,19 @@ ENV TARGETARCH=${TARGETARCH}
 WORKDIR /app
 RUN apt-get update && apt-get install -y mold curl tar && rm -rf /var/lib/apt/lists/*
 RUN echo "TARGETARCH is: ${TARGETARCH}"
+# Install cargo-binstall and sccache
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
-    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin; \
+    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin && \
+    curl -L https://github.com/mozilla/sccache/releases/download/v0.10.0/sccache-v0.10.0-aarch64-unknown-linux-musl.tar.gz | tar xz -C /tmp && \
+    mv /tmp/sccache-v0.10.0-aarch64-unknown-linux-musl/sccache /usr/local/bin/; \
     elif [ "${TARGETARCH}" = "amd64" ]; then \
-    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin; \
+    curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin && \
+    curl -L https://github.com/mozilla/sccache/releases/download/v0.10.0/sccache-v0.10.0-x86_64-unknown-linux-musl.tar.gz | tar xz -C /tmp && \
+    mv /tmp/sccache-v0.10.0-x86_64-unknown-linux-musl/sccache /usr/local/bin/; \
     else \
     echo "Unsupported TARGETARCH: ${TARGETARCH}"; exit 1; \
     fi
-RUN cargo binstall cargo-chef sccache --no-confirm
+RUN cargo binstall cargo-chef --no-confirm
 
 FROM chef AS planner
 COPY . .
@@ -27,7 +32,7 @@ ARG ACTIONS_RUNTIME_TOKEN
 ENV SCCACHE_GHA_ENABLED=on
 ENV ACTIONS_CACHE_URL=${ACTIONS_CACHE_URL}
 ENV ACTIONS_RUNTIME_TOKEN=${ACTIONS_RUNTIME_TOKEN}
-ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+ENV RUSTC_WRAPPER=sccache
 # Use mold linker for faster linking
 ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 
