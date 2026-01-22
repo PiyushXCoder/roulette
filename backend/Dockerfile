@@ -26,33 +26,40 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 
-# sccache environment variables (passed from GitHub Actions)
-ARG ACTIONS_CACHE_URL
-ARG ACTIONS_RUNTIME_TOKEN
-ENV SCCACHE_GHA_ENABLED=on
-ENV ACTIONS_CACHE_URL=${ACTIONS_CACHE_URL}
-ENV ACTIONS_RUNTIME_TOKEN=${ACTIONS_RUNTIME_TOKEN}
-ENV RUSTC_WRAPPER=sccache
 # Use mold linker for faster linking
 ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 
 COPY --from=planner /app/recipe.json recipe.json
 
-# Build dependencies with cargo-chef (cached by sccache)
+# Build dependencies with cargo-chef (uses local sccache cache)
 RUN --mount=type=cache,target=/root/.cache/sccache \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=secret,id=ACTIONS_CACHE_URL \
+    --mount=type=secret,id=ACTIONS_RUNTIME_TOKEN \
+    export ACTIONS_CACHE_URL=$(cat /run/secrets/ACTIONS_CACHE_URL 2>/dev/null || echo "") && \
+    export ACTIONS_RUNTIME_TOKEN=$(cat /run/secrets/ACTIONS_RUNTIME_TOKEN 2>/dev/null || echo "") && \
+    if [ -n "$ACTIONS_CACHE_URL" ]; then \
+        export SCCACHE_GHA_ENABLED=on RUSTC_WRAPPER=sccache; \
+    fi && \
     cargo chef cook --release --recipe-path recipe.json && \
-    sccache --show-stats
+    (sccache --show-stats 2>/dev/null || true)
 
 COPY . .
 
-# Build the application (also cached by sccache)
+# Build the application
 RUN --mount=type=cache,target=/root/.cache/sccache \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=secret,id=ACTIONS_CACHE_URL \
+    --mount=type=secret,id=ACTIONS_RUNTIME_TOKEN \
+    export ACTIONS_CACHE_URL=$(cat /run/secrets/ACTIONS_CACHE_URL 2>/dev/null || echo "") && \
+    export ACTIONS_RUNTIME_TOKEN=$(cat /run/secrets/ACTIONS_RUNTIME_TOKEN 2>/dev/null || echo "") && \
+    if [ -n "$ACTIONS_CACHE_URL" ]; then \
+        export SCCACHE_GHA_ENABLED=on RUSTC_WRAPPER=sccache; \
+    fi && \
     cargo build --release && \
-    sccache --show-stats
+    (sccache --show-stats 2>/dev/null || true)
 
 # Runtime stage
 FROM debian:bookworm-slim
