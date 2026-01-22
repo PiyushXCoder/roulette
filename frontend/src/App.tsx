@@ -140,7 +140,7 @@ function App() {
 
     // Get WebSocket URL from environment or use default
     const wsUrl =
-      import.meta.env.VITE_WS_URL || "ws://localhost:8000/api/game_ws";
+      import.meta.env.VITE_WS_URL || window.location.origin + "/api/game_ws";
 
     // Get or prompt for table ID (use sessionStorage to avoid double prompt in StrictMode)
     let tableId = sessionStorage.getItem("roulette_table_id");
