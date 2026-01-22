@@ -3,6 +3,7 @@ ARG TARGETARCH
 FROM rust:bookworm AS chef
 WORKDIR /app
 RUN apt-get update && apt-get install -y mold curl tar && rm -rf /var/lib/apt/lists/*
+RUN echo "TARGETARCH is: ${TARGETARCH}"
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
     curl -L https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-gnu.full.tgz | tar xz -C /usr/local/bin; \
     elif [ "${TARGETARCH}" = "amd64" ]; then \
