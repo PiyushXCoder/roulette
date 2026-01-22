@@ -77,6 +77,25 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
   if (wheel.hidden) spinButton?.checkSensors(screenContext);
   spinButton?.draw(deltaSeconds, context, screenContext);
 
+  // Create reset button to leave table and start fresh
+  const resetButton = Button.instance("reset_button");
+  resetButton?.setLabel("Reset");
+  resetButton?.setSmall(true);
+  resetButton?.setSkipDisabledCheck(true);
+  resetButton?.setPosition(screenContext.screen.width - 80, screenContext.screen.height - 40);
+  resetButton?.setEventListener(() => {
+    console.log("Reset button clicked - clearing session and reloading");
+    // Clear all session storage
+    sessionStorage.removeItem('roulette_player_id');
+    sessionStorage.removeItem('roulette_player_name');
+    sessionStorage.removeItem('roulette_table_id');
+    // Disconnect and reload
+    wsManager.disconnect();
+    window.location.reload();
+  });
+  if (wheel.hidden) resetButton?.checkSensors(screenContext);
+  resetButton?.draw(deltaSeconds, context, screenContext);
+
   // Wheel is drawn last so it appears on top
   wheel.checkSensors(screenContext);
   wheel.draw(deltaSeconds, context, screenContext);

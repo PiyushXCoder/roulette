@@ -17,6 +17,8 @@ class Button implements Drawable, Sensible {
   private x = 0
   private y = 0
   private is_being_clicked = false
+  private customFontHeight: number | null = null
+  private skipDisabledCheck: boolean = false
 
   private constructor(value: string) {
     this.id = value
@@ -33,18 +35,23 @@ class Button implements Drawable, Sensible {
   draw(_deltaSeconds: number, context: CanvasRenderingContext2D, _screenContext: ScreenContext) {
     // Check game state for button state
     const timeRemaining = gameState.getSpinTimeRemaining();
-    const isDisabled = gameState.spinRequested || gameState.isSpinning || gameState.bets.length === 0;
+    const isDisabled = !this.skipDisabledCheck && (gameState.spinRequested || gameState.isSpinning || gameState.bets.length === 0);
 
-    let label = timeRemaining > 0
-      ? `Spinning in ${timeRemaining}s`
-      : gameState.isSpinning
-        ? "Spinning..."
-        : this.label || "Spin";
+    const fontHeight = this.customFontHeight ?? FONT_HEIGHT;
+    let label = this.skipDisabledCheck
+      ? this.label
+      : timeRemaining > 0
+        ? `Spinning in ${timeRemaining}s`
+        : gameState.isSpinning
+          ? "Spinning..."
+          : this.label || "Spin";
 
-    context.font = "bold " + FONT_HEIGHT + "pt Sans";
+    context.font = "bold " + fontHeight + "pt Sans";
     let labelWidth = context.measureText(label).width;
     const localShiftX = this.x, localShiftY = this.y;
-    this.width = labelWidth + 2 * BUTTON_PADDING_X, this.height = FONT_HEIGHT + 2 * BUTTON_PADDING_Y
+    const paddingX = this.customFontHeight ? 15 : BUTTON_PADDING_X;
+    const paddingY = this.customFontHeight ? 8 : BUTTON_PADDING_Y;
+    this.width = labelWidth + 2 * paddingX, this.height = fontHeight + 2 * paddingY
 
     // Set button color based on state
     if (isDisabled) {
@@ -53,9 +60,9 @@ class Button implements Drawable, Sensible {
       context.fillStyle = colors.RED; // Active
     }
 
-    context.fillRect(localShiftX, localShiftY - FONT_HEIGHT, this.width, this.height);
+    context.fillRect(localShiftX, localShiftY - fontHeight, this.width, this.height);
     context.fillStyle = colors.WHITE;
-    context.fillText(label, localShiftX + BUTTON_PADDING_X, localShiftY + BUTTON_PADDING_Y);
+    context.fillText(label, localShiftX + paddingX, localShiftY + paddingY);
   }
 
   setEventListener(eventListener: () => void) {
@@ -65,9 +72,11 @@ class Button implements Drawable, Sensible {
   checkSensors(screenContext: ScreenContext): void {
     if (this.is_being_clicked) return;
 
-    // Check if button is disabled
-    const isDisabled = gameState.spinRequested || gameState.isSpinning || gameState.bets.length === 0;
-    if (isDisabled) return; // Don't respond to clicks when disabled
+    // Check if button is disabled (skip for buttons that don't depend on game state)
+    if (!this.skipDisabledCheck) {
+      const isDisabled = gameState.spinRequested || gameState.isSpinning || gameState.bets.length === 0;
+      if (isDisabled) return; // Don't respond to clicks when disabled
+    }
 
     const localShiftX = this.x, localShiftY = this.y;
     const width = this.width, height = this.height;
@@ -89,6 +98,14 @@ class Button implements Drawable, Sensible {
   setPosition(x: number, y: number) {
     this.x = x
     this.y = y
+  }
+
+  setSmall(small: boolean) {
+    this.customFontHeight = small ? 12 : null;
+  }
+
+  setSkipDisabledCheck(skip: boolean) {
+    this.skipDisabledCheck = skip;
   }
 }
 
