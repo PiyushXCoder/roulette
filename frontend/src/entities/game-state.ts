@@ -44,6 +44,9 @@ class GameState {
     }
 
     handleSpin(spinResult: SpinResponse): void {
+        console.log("handleSpin received:", spinResult);
+        console.log("Current balance before spin:", this.balance);
+        console.log("Pending balance will be:", spinResult.Spin.balance);
         this.lastLuckyNumber = spinResult.Spin.lucky_number;
         this.lastWinningAmount = spinResult.Spin.winning_amount;
         // Store pending balance - will be applied when wheel stops
@@ -60,8 +63,12 @@ class GameState {
 
     // Called when wheel animation completes
     onWheelStopped(): void {
+        console.log("onWheelStopped called");
+        console.log("pendingBalance:", this.pendingBalance);
+        console.log("Current balance:", this.balance);
         if (this.pendingBalance !== null) {
             this.balance = this.pendingBalance;
+            console.log("Balance updated to:", this.balance);
             this.pendingBalance = null;
         }
         this.isSpinning = false;
