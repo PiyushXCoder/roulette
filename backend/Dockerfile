@@ -13,7 +13,7 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
     else \
     echo "Unsupported TARGETARCH: ${TARGETARCH}"; exit 1; \
     fi
-RUN cargo binstall cargo-chef sccache --no-confirm
+RUN cargo binstall cargo-chef --no-confirm
 
 FROM chef AS planner
 COPY . .
@@ -21,7 +21,7 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
-ENV RUSTC_WRAPPER="sccache"
+
 
 RUN cargo chef cook --release --recipe-path recipe.json
 
