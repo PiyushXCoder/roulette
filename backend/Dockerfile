@@ -2,7 +2,7 @@
 FROM rust:bookworm AS chef
 WORKDIR /app
 RUN apt-get update && apt-get install -y mold && rm -rf /var/lib/apt/lists/*
-RUN cargo install cargo-binstall && cargo binstall cargo-chef sccache --no-confirm
+RUN cargo install cargo-chef sccache
 
 FROM chef AS planner
 COPY . .
@@ -11,7 +11,7 @@ RUN cargo chef prepare --recipe-path recipe.json
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 ENV RUSTC_WRAPPER="sccache"
-ENV SCCACHE_GHA_ENABLED="true"
+
 RUN cargo chef cook --release --recipe-path recipe.json
 
 COPY . .
