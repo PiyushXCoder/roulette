@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.75-slim AS chef
+FROM rust:latest-slim AS chef
 WORKDIR /app
 RUN apt-get update && apt-get install -y mold && rm -rf /var/lib/apt/lists/*
 RUN cargo install cargo-chef sccache
