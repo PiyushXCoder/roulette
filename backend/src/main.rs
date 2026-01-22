@@ -15,6 +15,8 @@ use structs::Game;
 
 #[launch]
 fn launch() -> _ {
+    env_logger::init();
+    log::info!("Starting roulette backend server");
     let game: ArcGame = Arc::new(Game::default());
     rocket::build()
         .manage(game)
