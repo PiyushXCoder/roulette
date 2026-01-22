@@ -12,9 +12,9 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
-      args:
-        VITE_WS_URL: ws://localhost:8080/api/game_ws
-        VITE_DEFAULT_TABLE: main-table
+      # args:
+      #   VITE_WS_URL: ws://localhost:8080/api/game_ws
+      #   VITE_DEFAULT_TABLE: main-table
     container_name: roulette-frontend
     restart: unless-stopped
     networks:

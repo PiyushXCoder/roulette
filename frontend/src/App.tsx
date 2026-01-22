@@ -130,6 +130,10 @@ function draw(
 
 export { GameScreen };
 
+const wsUrl =
+  import.meta.env.VITE_WS_URL ||
+  `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/api/game_ws`;
+
 function App() {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,10 +141,6 @@ function App() {
   useEffect(() => {
     // Track if this effect was aborted (React StrictMode unmount)
     let aborted = false;
-
-    // Get WebSocket URL from environment or use default
-    const wsUrl =
-      import.meta.env.VITE_WS_URL || window.location.origin + "/api/game_ws";
 
     // Get or prompt for table ID (use sessionStorage to avoid double prompt in StrictMode)
     let tableId = sessionStorage.getItem("roulette_table_id");
@@ -241,7 +241,7 @@ function App() {
       <div style={{ color: "white", padding: "20px" }}>
         <h2>Connection Error</h2>
         <p>{error}</p>
-        <p>Make sure the backend server is running on localhost:8000</p>
+        <p>Make sure the backend server is running on {wsUrl}</p>
       </div>
     );
   }
