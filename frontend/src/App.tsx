@@ -1,4 +1,7 @@
-import { GameScreen, ScreenContext } from "./components/game-screen/game-screen.tsx"
+import {
+  GameScreen,
+  ScreenContext,
+} from "./components/game-screen/game-screen.tsx";
 import "./App.css";
 import { colors } from "./entities/colors.ts";
 import { Board } from "./entities/board.ts";
@@ -12,9 +15,18 @@ import { gameState } from "./entities/game-state.ts";
 import type { ResponseMessage } from "./types/messages.ts";
 import { useEffect, useState } from "react";
 
-function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenContext: ScreenContext) {
+function draw(
+  deltaSeconds: number,
+  context: CanvasRenderingContext2D,
+  screenContext: ScreenContext,
+) {
   context.fillStyle = colors.BOARD;
-  context.fillRect(0, 0, screenContext.screen.width, screenContext.screen.height);
+  context.fillRect(
+    0,
+    0,
+    screenContext.screen.width,
+    screenContext.screen.height,
+  );
 
   const wheel = Wheel.instance();
   const board = Board.instance();
@@ -57,7 +69,10 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
   const clearButton = Button.instance("clear_button");
   const spinButtonWidth = spinButton?.width ?? 100;
   clearButton?.setLabel("Clear");
-  clearButton?.setPosition((screenContext.screen.width / 2) - spinButtonWidth - 10, screenContext.screen.height - 100);
+  clearButton?.setPosition(
+    screenContext.screen.width / 2 - spinButtonWidth - 10,
+    screenContext.screen.height - 100,
+  );
   clearButton?.setEventListener(() => {
     console.log("Clear bets button clicked");
     wsManager.sendClearBets();
@@ -66,10 +81,17 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
   });
   if (wheel.hidden) clearButton?.checkSensors(screenContext);
   clearButton?.draw(deltaSeconds, context, screenContext);
+  clearButton?.setIndicateSpinning(false);
+  clearButton?.setIndicateTimeRemaining(false);
 
   // Draw spin button BEFORE wheel so wheel appears on top
   spinButton?.setLabel("Spin!");
-  spinButton?.setPosition((screenContext.screen.width / 2) + 10, screenContext.screen.height - 100);
+  spinButton?.setIndicateSpinning(true);
+  spinButton?.setIndicateTimeRemaining(true);
+  spinButton?.setPosition(
+    screenContext.screen.width / 2 + 10,
+    screenContext.screen.height - 100,
+  );
   spinButton?.setEventListener(() => {
     console.log("Spin button clicked - requesting spin");
     wsManager.sendRequestSpin();
@@ -80,15 +102,20 @@ function draw(deltaSeconds: number, context: CanvasRenderingContext2D, screenCon
   // Create reset button to leave table and start fresh
   const resetButton = Button.instance("reset_button");
   resetButton?.setLabel("Reset");
+  resetButton?.setIndicateSpinning(false);
+  resetButton?.setIndicateTimeRemaining(false);
   resetButton?.setSmall(true);
   resetButton?.setSkipDisabledCheck(true);
-  resetButton?.setPosition(screenContext.screen.width - 80, screenContext.screen.height - 40);
+  resetButton?.setPosition(
+    screenContext.screen.width - 80,
+    screenContext.screen.height - 40,
+  );
   resetButton?.setEventListener(() => {
     console.log("Reset button clicked - clearing session and reloading");
     // Clear all session storage
-    sessionStorage.removeItem('roulette_player_id');
-    sessionStorage.removeItem('roulette_player_name');
-    sessionStorage.removeItem('roulette_table_id');
+    sessionStorage.removeItem("roulette_player_id");
+    sessionStorage.removeItem("roulette_player_name");
+    sessionStorage.removeItem("roulette_table_id");
     // Disconnect and reload
     wsManager.disconnect();
     window.location.reload();
@@ -112,25 +139,31 @@ function App() {
     let aborted = false;
 
     // Get WebSocket URL from environment or use default
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/api/game_ws';
+    const wsUrl =
+      import.meta.env.VITE_WS_URL || "ws://localhost:8000/api/game_ws";
 
     // Get or prompt for table ID (use sessionStorage to avoid double prompt in StrictMode)
-    let tableId = sessionStorage.getItem('roulette_table_id');
+    let tableId = sessionStorage.getItem("roulette_table_id");
     if (!tableId) {
-      tableId = prompt("Enter table ID:") || `Table_${Math.floor(Math.random() * 1000)}`;
+      tableId =
+        prompt("Enter table ID:") ||
+        `Table_${Math.floor(Math.random() * 1000)}`;
 
-      sessionStorage.setItem('roulette_table_id', tableId);
+      sessionStorage.setItem("roulette_table_id", tableId);
     }
 
     // Get or prompt for player name (use sessionStorage to avoid double prompt in StrictMode)
-    let playerName = sessionStorage.getItem('roulette_player_name');
+    let playerName = sessionStorage.getItem("roulette_player_name");
     if (!playerName) {
-      playerName = prompt("Enter your name:") || `Player_${Math.floor(Math.random() * 1000)}`;
-      sessionStorage.setItem('roulette_player_name', playerName);
+      playerName =
+        prompt("Enter your name:") ||
+        `Player_${Math.floor(Math.random() * 1000)}`;
+      sessionStorage.setItem("roulette_player_name", playerName);
     }
 
     // Connect to WebSocket
-    wsManager.connect(wsUrl, tableId, playerName)
+    wsManager
+      .connect(wsUrl, tableId, playerName)
       .then((playerId) => {
         if (aborted) {
           console.log("Connection succeeded but effect was aborted, ignoring");
@@ -149,8 +182,12 @@ function App() {
           return;
         }
         console.error("Failed to connect:", err);
-        const errorMessage = err instanceof Error ? err.message :
-          err instanceof Event ? 'Connection failed' : String(err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : err instanceof Event
+              ? "Connection failed"
+              : String(err);
         setError(`Failed to connect: ${errorMessage}`);
       });
 
@@ -177,7 +214,7 @@ function App() {
         gameState.addPlayer({
           name: message.SomePlayerJoined.name,
           id_hash: message.SomePlayerJoined.hash_id,
-          bet_amount: message.SomePlayerJoined.bet_amount
+          bet_amount: message.SomePlayerJoined.bet_amount,
         });
       } else if ("SomePlayerLeft" in message) {
         gameState.removePlayer(message.SomePlayerLeft.hash_id);
@@ -201,7 +238,7 @@ function App() {
 
   if (error) {
     return (
-      <div style={{ color: 'white', padding: '20px' }}>
+      <div style={{ color: "white", padding: "20px" }}>
         <h2>Connection Error</h2>
         <p>{error}</p>
         <p>Make sure the backend server is running on localhost:8000</p>
@@ -211,15 +248,13 @@ function App() {
 
   if (!connected) {
     return (
-      <div style={{ color: 'white', padding: '20px' }}>
+      <div style={{ color: "white", padding: "20px" }}>
         <h2>Connecting to game server...</h2>
       </div>
     );
   }
 
-  return (
-    <GameScreen draw={draw} />
-  )
+  return <GameScreen draw={draw} />;
 }
 
-export default App
+export default App;
