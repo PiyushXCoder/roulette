@@ -107,7 +107,7 @@ class Wheel implements Drawable, Sensible {
       if (winAmount > 0) {
         ctx.fillStyle = "#00ff88";
         ctx.font = "bold 28px Arial, sans-serif";
-        ctx.fillText(`YOU WIN $${winAmount}!`, x + DIALOG_WIDTH / 2, y + DIALOG_HEIGHT - 20);
+        ctx.fillText(`YOU WIN ₹${winAmount}!`, x + DIALOG_WIDTH / 2, y + DIALOG_HEIGHT - 20);
       } else {
         ctx.fillStyle = "#ff6666";
         ctx.font = "bold 22px Arial, sans-serif";
